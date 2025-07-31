@@ -1,10 +1,14 @@
 import sys
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
 from mainwindow import Ui_MainWindow
 import mc_server_utils
 import os
 import subprocess
+import shutil
+
+
 base_path = os.path.join(os.path.expanduser("~"), "MinecraftServers")
 class Window(QMainWindow):
     def __init__(self,parent=None):
@@ -12,9 +16,60 @@ class Window(QMainWindow):
         self.setWindowTitle("Main Window")
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
+        #Abrir dialogo de crear servidor
         self.main_window.createServerBtn.clicked.connect(self.spawnDialog)
         
+        # Recargar servidores al iniciar
+        self.reloadServers()
+        
+        
+        #Crear directorio base si no existe
         self.crearBasePath()
+
+    def reloadServers(self):
+        servidores = os.listdir(base_path + "/servers")
+        for server in servidores:
+            uriServer = f"{base_path}/servers/{server}"
+            widget = QWidget()
+            layout  = QHBoxLayout()
+            img = QLabel()
+            nombre = QLabel(server)
+            ico = QIcon(f"{uriServer}/server-icon.png")
+            button = QPushButton( "START")
+            
+            
+            try:
+                
+                version = os.listdir(uriServer + '/versions')[0]
+                nombreJar = f"{version}_server_vanilla.jar"
+                rutaJar = os.path.join(base_path, "jars", nombreJar)
+            
+
+                button.clicked.connect(lambda _, s=server: self.startServer(s, 1024, 2048, rutaJar))
+
+            except :
+                button.setEnabled(False)
+                button.setText("Recargar la APP")
+                print(f"No se encontró el JAR para el servidor {server}.")
+            img.setPixmap(ico.pixmap(64, 64))
+        
+            versionLabel = QLabel(f"Versión: {version}")
+            layoutInfo = QVBoxLayout()
+            layoutInfo.addWidget(nombre)
+            layoutInfo.addWidget(versionLabel)
+            
+            layout.addWidget(img)
+            layout.addLayout(layoutInfo)
+            layout.addStretch()
+            layout.addWidget(button)
+            widget.setLayout(layout)
+        
+            item = QListWidgetItem()
+            item.setSizeHint(widget.sizeHint())
+
+            self.main_window.listServers.addItem(item)
+            self.main_window.listServers.setItemWidget(item, widget)
+        self.main_window.listServers.setCurrentRow(0)
         
     def crearBasePath(self):
         if not os.path.exists(base_path):
@@ -54,12 +109,6 @@ class Window(QMainWindow):
         maxRamSpin.setRange(512, 64000)
         maxRamSpin.setValue(2048)
 
-        puertoLabel = QLabel("Puerto:")
-        puertoSpin = QSpinBox()
-        puertoSpin.setRange(1024, 65535)
-        puertoSpin.setValue(25565)
-
-
         # --- Botones ---
         createButton = QPushButton("Crear")
         cancelButton = QPushButton("Cancelar")
@@ -71,7 +120,6 @@ class Window(QMainWindow):
         formLayout.addRow(tipoLabel, tipoCombo)
         formLayout.addRow(minRamLabel, minRamSpin)
         formLayout.addRow(maxRamLabel, maxRamSpin)
-        formLayout.addRow(puertoLabel, puertoSpin)
 
         buttonLayout = QHBoxLayout()
         buttonLayout.addStretch()
@@ -90,11 +138,11 @@ class Window(QMainWindow):
             tipoCombo.currentText(),
             minRamSpin.value(),
             maxRamSpin.value(),
-            puertoSpin.value(),
             dlg
         ))
         cancelButton.clicked.connect(dlg.reject)
 
+        
         dlg.exec()
 
     def aceptar_eula(self,base_path, nombre):
@@ -132,7 +180,7 @@ class Window(QMainWindow):
         print("EULA añadida y aceptada.")
 
 
-    def crearServidor(self, nombre, version, tipo, ram_min, ram_max, puerto, dialog):
+    def crearServidor(self, nombre, version, tipo, ram_min, ram_max, dialog):
         if not nombre.strip():
             print("El nombre del servidor no puede estar vacío.")
             return
@@ -149,15 +197,22 @@ class Window(QMainWindow):
         # Aquí aceptamos la EULA automáticamente
         self.aceptar_eula(base_path, nombre)
 
+        shutil.copy("minecraft/ico/server-icon.png", f"{base_path}/servers/{nombre}/")
         # Lanzamos el servidor
+        self.startServer(nombre, ram_min, ram_max, f"{base_path}/jars/{nombreJar}")
+
+        print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB.")
+        # Recargar la lista de servidores
+        self.main_window.listServers.clear()
+        self.reloadServers()
+        dialog.accept()
+
+    def startServer(self, nombre, ram_min, ram_max, rutaJar):
         subprocess.Popen(
-            ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", f"{base_path}/jars/{nombreJar}", "nogui"],
+            ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", rutaJar, "nogui"],
             cwd=os.path.join(base_path, "servers", nombre),
             creationflags=subprocess.CREATE_NEW_CONSOLE
         )
-
-        print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB, puerto {puerto}.")
-        dialog.accept()
 
 
 
