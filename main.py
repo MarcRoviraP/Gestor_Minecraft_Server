@@ -296,9 +296,9 @@ class Window(QMainWindow):
             except :
                 button.setEnabled(False)
                 button.setText("Recargar la APP")
-                # Usar QTimer para recargar la lista después de 100 segundos
-                QTimer.singleShot(100000, self.reloadServers)
-                print(f"No se encontró el JAR para el servidor {server}.")
+                # Usar QTimer para recargar la lista después de 10 segundos
+                QTimer.singleShot(10000, self.reloadServers)
+                print(f"No se encontró la carpeta versions o JAR para el servidor {server}.")
             img.setPixmap(ico.pixmap(64, 64))
         
             versionLabel = QLabel(f"Versión: {version}")
