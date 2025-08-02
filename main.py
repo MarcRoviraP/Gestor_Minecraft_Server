@@ -1,3 +1,4 @@
+import platform
 import sys
 import os
 import subprocess
@@ -509,11 +510,30 @@ class Window(QMainWindow):
         dialog.accept()
 
     def startServer(self, nombre, ram_min, ram_max, rutaJar):
-        subprocess.Popen(
-            ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", rutaJar, "nogui"],
-            cwd=os.path.join(base_path, "servers", nombre),
-            creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+
+        jar_command = ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", rutaJar, "nogui"]
+        jar_command_str = " ".join(jar_command)
+        cwd = os.path.join(server_path, nombre)
+        operating_system = platform.system().lower()
+
+        if operating_system == 'windows':
+            subprocess.Popen(jar_command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        elif operating_system == 'linux':
+            if shutil.which('gnome-terminal'):
+                # Not tested
+                subprocess.Popen(['gnome-terminal', '--'] + jar_command, cwd=cwd)
+            elif shutil.which('konsole'):
+                # Not tested
+                subprocess.Popen(['konsole', '-e', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
+            elif shutil.which('xterm'):
+                # Not tested
+                subprocess.Popen(['xterm', '-e', f'cd "{cwd}" && {jar_command_str}; bash'])
+            elif shutil.which('ptyxis'):
+                subprocess.Popen(['ptyxis', '--', 'bash', '-c', f'cd {cwd} && {jar_command_str}'])
+            else:
+                print("tty not supported")
+        else:
+            print("os not supported")
 
 
 
