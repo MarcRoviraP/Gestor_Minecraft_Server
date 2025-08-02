@@ -13,6 +13,14 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QPushButton {
+    background: transparent;
+    font-size: 16px;
+    font-weight: bold;
+}
+</string>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QListWidget" name="listServers">
     <property name="geometry">
@@ -55,7 +63,7 @@
        <height>361</height>
       </rect>
      </property>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -92,7 +100,7 @@
       </layout>
      </widget>
     </widget>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>20</x>

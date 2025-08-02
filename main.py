@@ -159,7 +159,7 @@ class Window(QMainWindow):
                 self.main_window.pvp.setChecked(pvp.lower() == "true")
                 
         # Recargar la lista blanca de forma asíncrona después de cargar las propiedades
-        QTimer.singleShot(0, self.reloadWhiteList)
+        QTimer.singleShot(1, self.reloadWhiteList)
 
     def insertUserWhiteList(self):
         user_name = self.main_window.nametagPlayer.text()
@@ -215,7 +215,11 @@ class Window(QMainWindow):
         
         for entry in white_list:
             nameTag = entry.get('name', 'Unknown')
-            item = QListWidgetItem(nameTag)
+            item = QListWidgetItem()
+            borrarButton = QPushButton("")
+            borrarButton.setIcon(QIcon("minecraft/ico/delete.png"))
+            borrarButton.setToolTip("Borrar de la lista blanca")
+            borrarButton.clicked.connect(partial(self.removeUserFromWhiteList, entry))
             try:
                 avatar_url = f"https://minotar.net/avatar/{nameTag}/32"
                 avatar_pixmap = QPixmap()
@@ -225,9 +229,40 @@ class Window(QMainWindow):
                 print(f"Error al cargar el avatar de {nameTag}: {e}")
                 icon = QIcon("minecraft/ico/default_avatar.png")
             item.setIcon(icon)
+            widget = QWidget()
+            layout = QHBoxLayout()
+            layout.addWidget(QLabel(nameTag))
+            layout.addWidget(borrarButton)
+            layout.addStretch()
+            widget.setLayout(layout)
+            item.setSizeHint(widget.sizeHint())
             self.main_window.whiteList.addItem(item)
+            self.main_window.whiteList.setItemWidget(item, widget)
             
             
+    def removeUserFromWhiteList(self, entry):
+        # Find the QListWidgetItem corresponding to the entry
+        for i in range(self.main_window.whiteList.count()):
+            item = self.main_window.whiteList.item(i)
+            widget = self.main_window.whiteList.itemWidget(item)
+            if widget:
+                label = widget.findChild(QLabel)
+                if label and label.text() == entry.get('name'):
+                    self.main_window.whiteList.removeItemWidget(item)
+                    self.main_window.whiteList.takeItem(i)
+                    break
+        ruta = os.path.join(base_path, "servers", self.lastServer, "whitelist.json")
+        if not os.path.exists(ruta):
+            print(f"El servidor {self.lastServer} no existe.")
+            return
+        with open(ruta, 'r+') as f:
+            white_list = json.load(f)
+            # Filtrar la lista blanca para eliminar el usuario
+            white_list = [user for user in white_list if user.get('name') != entry.get('name')]
+            f.seek(0)
+            f.write(json.dumps(white_list, indent=4))
+            f.truncate()
+
     def reloadServers(self):
         self.main_window.listServers.clear()
         servidores = os.listdir(base_path + "/servers")
