@@ -14,10 +14,129 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QPushButton {
+   <string notr="true">/* =============== COLORES BASE =============== */
+* {
+    color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+}
+
+/* =============== FONDO GENERAL =============== */
+QWidget {
+    background-color: #1e1e1e;
+}
+
+/* =============== BOTONES ===================== */
+QPushButton {
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+
+QPushButton:hover {
+    background-color: #3d3d3d;
+    border: 1px solid #666;
+}
+
+QPushButton:pressed {
+    background-color: #555;
+    border: 1px solid #888;
+}
+
+/* =============== BOTONES ICONO ================= */
+QPushButton[btnType=&quot;icon&quot;] {
     background: transparent;
-    font-size: 16px;
-    font-weight: bold;
+    border: none;
+    padding: 6px;
+}
+
+QPushButton[btnType=&quot;icon&quot;]:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+}
+
+QPushButton[btnType=&quot;icon&quot;]:pressed {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* =============== LABELS ======================= */
+QLabel {
+    color: #ffffff;
+}
+
+/* =============== ENTRADAS DE TEXTO ============ */
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 4px;
+    color: #eee;
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #00bcd4;
+}
+
+/* =============== COMBOBOX ===================== */
+QComboBox {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #2a2a2a;
+    selection-background-color: #00bcd4;
+    color: #fff;
+}
+
+/* =============== CHECKBOX ===================== */
+QCheckBox {
+    spacing: 5px;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+}
+
+QCheckBox::indicator:unchecked {
+    background-color: #444;
+    border: 1px solid #888;
+    border-radius: 3px;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #00bcd4;
+    border: 1px solid #00bcd4;
+}
+
+/* =============== SCROLLBARS =================== */
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: #1e1e1e;
+    border: none;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle {
+    background: #555;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:hover {
+    background: #00bcd4;
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+    height: 0px;
+    width: 0px;
 }
 </string>
   </property>
@@ -106,7 +225,7 @@
        <x>20</x>
        <y>20</y>
        <width>301</width>
-       <height>408</height>
+       <height>416</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -360,7 +479,7 @@
      <x>0</x>
      <y>0</y>
      <width>1117</width>
-     <height>21</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>

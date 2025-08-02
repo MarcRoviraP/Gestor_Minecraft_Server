@@ -217,6 +217,8 @@ class Window(QMainWindow):
             nameTag = entry.get('name', 'Unknown')
             item = QListWidgetItem()
             borrarButton = QPushButton("")
+            borrarButton.setProperty("btnType", "icon")
+            borrarButton.setIconSize(QSize(24, 24))
             borrarButton.setIcon(QIcon("minecraft/ico/delete.png"))
             borrarButton.setToolTip("Borrar de la lista blanca")
             borrarButton.clicked.connect(partial(self.removeUserFromWhiteList, entry))
@@ -277,27 +279,8 @@ class Window(QMainWindow):
             folderIcon = QIcon("minecraft/ico/folder.png")
             
             folderButton = QPushButton(folderIcon, "")
-            folderButton.setStyleSheet("""
-    QPushButton {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-size: 16px;
-        font-weight: bold;
-        border: 2px solid #388E3C;
-    }
-
-    QPushButton:hover {
-        background-color: #45A049;
-        border: 2px solid #2E7D32;
-    }
-
-    QPushButton:pressed {
-        background-color: #388E3C;
-        border: 2px solid #1B5E20;
-    }
-""")
+            folderButton.setProperty("btnType", "icon")
+            folderButton.setToolTip("Abrir carpeta del servidor")
 
             version = "N/A"
             
