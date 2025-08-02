@@ -286,7 +286,7 @@ class Window(QMainWindow):
             
             try:
                 
-                version = os.listdir(uriServer + '/versions')[0]
+                version = mc_server_utils.detectar_version_minecraft(uriServer)
                 nombreJar = f"{version}_server_vanilla.jar"
                 rutaJar = os.path.join(base_path, "jars", nombreJar)
             

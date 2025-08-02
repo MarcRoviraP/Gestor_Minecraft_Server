@@ -1,12 +1,19 @@
 import requests
+import os
+import re
 
 def obtener_versiones_minecraft():
+    #JARs disponibles apartir de la versión 1.2.5
+    
     url = "https://piston-meta.mojang.com/mc/game/version_manifest.json"
     response = requests.get(url)
 
     if response.status_code == 200:
         data = response.json()
         versiones = [v["id"] for v in data["versions"] if v["type"] == "release"]
+        for i in range(6):
+            versiones.pop()  # Eliminar las últimas 6 versiones
+
         return versiones
     else:
         print("Error al obtener las versiones:", response.status_code)
@@ -30,3 +37,16 @@ def descargar_server_jar(url, ruta_destino):
     else:
         print("❌ Error al descargar:", response.status_code)
 
+def detectar_version_minecraft(carpeta_servidor):
+    log_path = os.path.join(carpeta_servidor, "logs", "latest.log")
+    if not os.path.exists(log_path):
+        log_path = os.path.join(carpeta_servidor, "server.log")
+        
+
+    with open(log_path, "r", encoding="utf-8") as log_file:
+        for linea in log_file:
+            if "Starting minecraft server version" in linea:
+                match = re.search(r"version\s+([\d.]+)", linea)
+                if match:
+                    return match.group(1)
+    return "N/A"
