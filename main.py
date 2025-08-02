@@ -159,7 +159,7 @@ class Window(QMainWindow):
                 self.main_window.pvp.setChecked(pvp.lower() == "true")
                 
         # Recargar la lista blanca de forma asíncrona después de cargar las propiedades
-        QTimer.singleShot(1, self.reloadWhiteList)
+        QTimer.singleShot(10, self.reloadWhiteList)
 
     def insertUserWhiteList(self):
         user_name = self.main_window.nametagPlayer.text()
