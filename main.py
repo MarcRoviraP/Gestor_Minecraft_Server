@@ -17,7 +17,7 @@ class Window(QMainWindow):
     def __init__(self,parent=None):
         super().__init__(parent)
         self.lastServer = ""
-        self.setWindowTitle("Main Window")
+        self.setWindowTitle("Gestor de Servidores Minecraft")
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
         
@@ -179,11 +179,11 @@ class Window(QMainWindow):
                 
                 response = requests.get(url)
                 if response.status_code != 200:
-                    print(f"❌ Error al obtener el usuario {user_name}: {response.status_code}")
+                    self.showWarningDialog(f"❌ Error al obtener el usuario {user_name}", "Error al obtener usuario")
                     return
                 user_data = response.json()
                 if not user_data:
-                    print(f"❌ Usuario {user_name} no encontrado.")
+                    self.showWarningDialog(f"❌ Usuario {user_name} no encontrado.", "Usuario no encontrado")
                     return
                 user_id = user_data.get("id", user_name)
 
@@ -459,10 +459,17 @@ class Window(QMainWindow):
             f.writelines(lines)
         print("EULA añadida y aceptada.")
 
+    def showWarningDialog(self, message,title="Advertencia"):
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        dialog.setWindowTitle(title)
+        dialog.setText(message)
+        dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
+        dialog.exec()
 
     def crearServidor(self, nombre, version, tipo, ram_min, ram_max,seed, hardcore, dialog):
         if not nombre.strip():
-            print("El nombre del servidor no puede estar vacío.")
+            self.showWarningDialog("El nombre del servidor no puede estar vacío.", "Error al crear servidor")
             return
      
 
