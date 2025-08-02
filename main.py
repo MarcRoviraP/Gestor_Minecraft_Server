@@ -1,18 +1,26 @@
 import sys
-from PyQt6.QtWidgets import *
-from PyQt6.QtCore import *
-from PyQt6.QtGui import *
-from mainwindow import Ui_MainWindow
-import mc_server_utils
 import os
 import subprocess
 import shutil
-from functools import partial
 import json
 import requests
 import uuid
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from functools import partial
+
+from fs_utils import mkdir_if_not_exists
+from mainwindow import Ui_MainWindow
+import mc_server_utils
+
 
 base_path = os.path.join(os.path.expanduser("~"), "MinecraftServers")
+server_path = os.path.join(base_path, "servers")
+jars_path = os.path.join(base_path, "jars")
+
+[mkdir_if_not_exists(path) for path in [server_path, jars_path]]
+
 class Window(QMainWindow):
     def __init__(self,parent=None):
         super().__init__(parent)
