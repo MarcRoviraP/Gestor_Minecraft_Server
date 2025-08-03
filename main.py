@@ -479,8 +479,24 @@ class Window(QMainWindow):
         if not nombre.strip():
             self.showWarningDialog("El nombre del servidor no puede estar vacío.", "Error al crear servidor")
             return
-     
+        if tipo == "Vanilla":
+            self.setup_minecraft_server_vanilla(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
+        elif tipo == "Forge":
+            self.setup_minecraft_server_forge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
+            
+        elif tipo == "Fabric":
+            self.setup_minecraft_server_fabric(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
 
+
+        elif tipo == "NeoForge":
+            self.setup_minecraft_server_neoforge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
+            
+    def setup_minecraft_server_forge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
+        print(mc_server_utils.getRecommendedForgeVersion(version))
+        
+        #Buscar la versión de Forge
+         
+    def setup_minecraft_server_vanilla(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
         nombreJar = f"{version}_server_vanilla.jar"
 
         if not os.path.exists(f"{base_path}/jars/{nombreJar}"):

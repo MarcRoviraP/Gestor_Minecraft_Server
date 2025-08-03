@@ -50,3 +50,24 @@ def detectar_version_minecraft(carpeta_servidor):
                 if match:
                     return match.group(1)
     return "N/A"
+
+def getRecommendedForgeVersion(version):
+    url = "https://api.curseforge.com/v1/minecraft/modloader"
+    
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        # Filtrar por versión y recomendado
+        filtered = [
+            mod for mod in data.get("data", [])
+            if mod.get("gameVersion") == version and mod.get("recommended")
+        ]
+        
+        if filtered:
+            return filtered[0].get("name")
+        else:
+            print("No se encontró una versión recomendada de Forge para la versión de Minecraft especificada.")
+            return None
+    else:
+        print("Error al obtener la versión recomendada de Forge:", response.status_code)
+        return None
