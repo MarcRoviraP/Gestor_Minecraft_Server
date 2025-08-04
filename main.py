@@ -518,6 +518,8 @@ class Window(QMainWindow):
         elif tipo == "NeoForge":
             self.setup_minecraft_server_neoforge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
             
+        self.reloadServers()
+
     def setup_minecraft_server_forge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
 
         forgeVersion = mc_server_utils.getRecommendedForgeVersion(version).split("-")[1]
@@ -563,7 +565,6 @@ class Window(QMainWindow):
         print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB.")
         # Recargar la lista de servidores
         self.main_window.listServers.clear()
-        self.reloadServers()
         dialog.accept()
 
     def writeBeforeLaunchSettings(self, nombre, seed, hardcore, version,tipo,ram_min=1024, ram_max=2048):
