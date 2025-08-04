@@ -294,8 +294,9 @@ class Window(QMainWindow):
             version = "N/A"
             
             try:
-                
-                version = mc_server_utils.detectar_version_minecraft(uriServer)
+
+                with open(f"{server_path}/{server}/versions.txt", "r") as f:
+                    version = f.readline().strip()
                 nombreJar = f"{version}_server_vanilla.jar"
                 rutaJar = os.path.join(jars_path, nombreJar)
             
@@ -526,7 +527,7 @@ class Window(QMainWindow):
 
         subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
         
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore)
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version)
         
         self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/forge-{mcVersion}-{forgeVersion}-shim.jar")
         dialog.accept()
@@ -541,7 +542,9 @@ class Window(QMainWindow):
                 f"{jars_path}/{nombreJar}"
             )
 
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore)
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore,version)
+        
+        
         # Lanzamos el servidor
         self.startServer(nombre, ram_min, ram_max, f"{jars_path}/{nombreJar}")
 
@@ -551,11 +554,15 @@ class Window(QMainWindow):
         self.reloadServers()
         dialog.accept()
 
-    def writeBeforeLaunchSettings(self, nombre, seed, hardcore):
+    def writeBeforeLaunchSettings(self, nombre, seed, hardcore, version):
         ruta = os.path.join(server_path, nombre)
         # Aquí aceptamos la EULA automáticamente
         self.aceptar_eula(base_path, nombre)
 
+        if not os.path.exists(f"{ruta}/versions.txt"):
+            with open(f"{ruta}/versions.txt", "w") as f:
+                f.write(f"{version}\n"
+                        )
         if hardcore:
             self.writeProperties(ruta, "hardcore=true\n")
         if seed:
