@@ -2,6 +2,7 @@ import requests
 import os
 import re
 
+globalforgeVersions = []
 def obtener_versiones_minecraft():
     #JARs disponibles apartir de la versión 1.2.5
     
@@ -52,11 +53,9 @@ def detectar_version_minecraft(carpeta_servidor):
     return "N/A"
 
 def getRecommendedForgeVersion(version):
-    url = "https://api.curseforge.com/v1/minecraft/modloader"
-    
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
+    global globalforgeVersions
+    if globalforgeVersions.status_code == 200:
+        data = globalforgeVersions.json()
         # Filtrar por versión y recomendado
         filtered = [
             mod for mod in data.get("data", [])
@@ -69,5 +68,45 @@ def getRecommendedForgeVersion(version):
             print("No se encontró una versión recomendada de Forge para la versión de Minecraft especificada.")
             return None
     else:
-        print("Error al obtener la versión recomendada de Forge:", response.status_code)
+        print("Error al obtener la versión recomendada de Forge:", globalforgeVersions.status_code)
         return None
+def getMinecraftVersionFromForge():
+    global globalforgeVersions
+    listGameVersions = []
+
+    if not globalforgeVersions:
+        getAllForgeVersions()
+    data = globalforgeVersions.json()
+
+    filtered = [
+        mod for mod in data.get("data", [])
+        if mod.get("recommended") ]
+    if filtered:
+        for mod in filtered:
+            version = mod.get("gameVersion")
+            # Comprobar si la versión es menor que 1.5.2
+            if (
+                version not in listGameVersions and
+                tuple(map(int, version.split("."))) >= (1, 5, 2)
+            ):
+                listGameVersions.append(version)
+        listGameVersions.sort(key=lambda x: tuple(map(int, x.split('.'))))
+        listGameVersions.reverse()  # Ordenar de mayor a menor
+        return listGameVersions
+def getAllForgeVersions():
+    url = "https://api.curseforge.com/v1/minecraft/modloader"
+
+    global globalforgeVersions
+    globalforgeVersions = requests.get(url)
+
+def downloadJARInstallerForge(mcVersion, forgeVersion, ruta_destino):
+    url = f"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar"
+    response = requests.get(url, stream=True)
+    
+    if response.status_code == 200:
+        with open(ruta_destino, 'wb') as f:
+            for chunk in response.iter_content(1024):
+                f.write(chunk)
+        print("✅ Descargado correctamente:", ruta_destino)
+    else:
+        print("❌ Error al descargar:", response.status_code)

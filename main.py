@@ -389,8 +389,8 @@ class Window(QMainWindow):
         # --- Layouts ---
         formLayout = QFormLayout()
         formLayout.addRow(nombreLabel, nombreEdit)
-        formLayout.addRow(versionLabel, versionCombo)
         formLayout.addRow(tipoLabel, tipoCombo)
+        formLayout.addRow(versionLabel, versionCombo)
         formLayout.addRow(minRamLabel, minRamSpin)
         formLayout.addRow(maxRamLabel, maxRamSpin)
         formLayout.addRow(seedLabel, seedEdit)
@@ -407,6 +407,8 @@ class Window(QMainWindow):
         dlg.setLayout(mainLayout)
 
         # --- Conexiones ---
+        tipoCombo.currentTextChanged.connect(lambda text: self.reloadVersions(text, versionCombo))
+
         createButton.clicked.connect(lambda: self.crearServidor(
             nombreEdit.text(),
             versionCombo.currentText(),
@@ -422,6 +424,12 @@ class Window(QMainWindow):
         
         dlg.exec()
 
+    def reloadVersions(self, tipo, versionCombo):
+        versionCombo.clear()
+        if tipo == "Vanilla":
+            versionCombo.addItems(mc_server_utils.obtener_versiones_minecraft())
+        elif tipo == "Forge":
+            versionCombo.addItems(mc_server_utils.getMinecraftVersionFromForge())
     def writeProperties(self, ruta, text):
         server_properties_path = os.path.join(ruta, "server.properties")
         # Si no existe, crea el fichero y escribe la línea
@@ -493,17 +501,22 @@ class Window(QMainWindow):
             self.setup_minecraft_server_neoforge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
             
     def setup_minecraft_server_forge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
-        print(mc_server_utils.getRecommendedForgeVersion(version))
+
+        forgeVersion = mc_server_utils.getRecommendedForgeVersion(version).split("-")[1]
+        mcVersion = version
         
+        installerName = (f"forge-{mcVersion}-{forgeVersion}-installer.jar")
+        if not os.path.exists(f"{jars_path}/{installerName}"):
+            mc_server_utils.downloadJARInstallerForge(mcVersion, forgeVersion, f"{jars_path}/{installerName}")
         #Buscar la versión de Forge
          
     def setup_minecraft_server_vanilla(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
         nombreJar = f"{version}_server_vanilla.jar"
 
-        if not os.path.exists(f"{base_path}/jars/{nombreJar}"):
+        if not os.path.exists(f"{jars_path}/{nombreJar}"):
             mc_server_utils.descargar_server_jar(
                 mc_server_utils.obtener_jar_servidor(version),
-                f"{base_path}/jars/{nombreJar}"
+                f"{jars_path}/{nombreJar}"
             )
 
         # Aquí aceptamos la EULA automáticamente
