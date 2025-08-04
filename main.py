@@ -67,7 +67,7 @@ class Window(QMainWindow):
         self.crearBaseFolders()
 
     def saveProperties(self):
-        ruta = os.path.join(base_path, "servers", self.lastServer)
+        ruta = os.path.join(server_path, self.lastServer)
         if not os.path.exists(ruta):
             print(f"El servidor {self.lastServer} no existe.")
             return
@@ -108,7 +108,7 @@ class Window(QMainWindow):
         
     def loadProperties(self,server):
         self.lastServer = server
-        ruta = os.path.join(base_path, "servers", server)
+        ruta = os.path.join(server_path, server)
         if not os.path.exists(ruta):
             print(f"El servidor {server} no existe.")
             return
@@ -173,7 +173,7 @@ class Window(QMainWindow):
     def insertUserWhiteList(self):
         user_name = self.main_window.nametagPlayer.text()
         if user_name:
-            write_list_path = os.path.join(base_path, "servers", self.lastServer, "whitelist.json")
+            write_list_path = os.path.join(server_path, self.lastServer, "whitelist.json")
             if not os.path.exists(write_list_path):
                 with open(write_list_path, 'w') as f:
                     json.dump([], f)
@@ -209,7 +209,7 @@ class Window(QMainWindow):
 
     def reloadWhiteList(self):
         self.main_window.whiteList.clear()
-        ruta = os.path.join(base_path, "servers", self.lastServer)
+        ruta = os.path.join(server_path, self.lastServer)
         if not os.path.exists(ruta):
             print(f"El servidor {self.lastServer} no existe.")
             return
@@ -262,7 +262,7 @@ class Window(QMainWindow):
                     self.main_window.whiteList.removeItemWidget(item)
                     self.main_window.whiteList.takeItem(i)
                     break
-        ruta = os.path.join(base_path, "servers", self.lastServer, "whitelist.json")
+        ruta = os.path.join(server_path, "servers", self.lastServer, "whitelist.json")
         if not os.path.exists(ruta):
             print(f"El servidor {self.lastServer} no existe.")
             return
@@ -276,9 +276,9 @@ class Window(QMainWindow):
 
     def reloadServers(self):
         self.main_window.listServers.clear()
-        servidores = os.listdir(base_path + "/servers")
+        servidores = os.listdir(server_path)
         for server in servidores:
-            uriServer = f"{base_path}/servers/{server}"
+            uriServer = f"{server_path}/{server}"
             widget = QWidget()
             layout  = QHBoxLayout()
             img = QLabel()
@@ -297,7 +297,7 @@ class Window(QMainWindow):
                 
                 version = mc_server_utils.detectar_version_minecraft(uriServer)
                 nombreJar = f"{version}_server_vanilla.jar"
-                rutaJar = os.path.join(base_path, "jars", nombreJar)
+                rutaJar = os.path.join(jars_path, nombreJar)
             
                 button.clicked.connect(partial(self.startServer, server, 1024, 2048, rutaJar))
                 folderButton.clicked.connect(partial(QDesktopServices.openUrl, QUrl.fromLocalFile(uriServer)))
@@ -306,7 +306,12 @@ class Window(QMainWindow):
                 button.setEnabled(False)
                 button.setText("Recargar la APP")
                 # Usar QTimer para recargar la lista después de 10 segundos
-                QTimer.singleShot(10000, self.reloadServers)
+                # Evitar crear múltiples timers: solo crear uno si no hay otro activo
+                if not hasattr(self, "_reload_timer") or not self._reload_timer.isActive():
+                    self._reload_timer = QTimer(self)
+                    self._reload_timer.setSingleShot(True)
+                    self._reload_timer.timeout.connect(self.reloadServers)
+                    self._reload_timer.start(10000)
                 print(f"No se encontró la carpeta versions o JAR para el servidor {server}.")
             img.setPixmap(ico.pixmap(64, 64))
         
@@ -340,8 +345,8 @@ class Window(QMainWindow):
     def crearBaseFolders(self):
         if not os.path.exists(base_path):
             os.makedirs(base_path)
-            os.makedirs(os.path.join(base_path, "jars"))
-            os.makedirs(os.path.join(base_path, "servers"))
+            os.makedirs(os.path.join(jars_path))
+            os.makedirs(os.path.join(server_path))
         return base_path
 
     def spawnDialog(self):
@@ -444,10 +449,10 @@ class Window(QMainWindow):
         
     def aceptar_eula(self,base_path, nombre):
 
-        server_path = os.path.join(base_path, "servers", nombre)
-        eula_path = os.path.join(base_path, "servers", nombre, "eula.txt")
-    
-        os.makedirs(server_path, exist_ok=True)
+        actual_server_path = os.path.join(server_path, nombre)
+        eula_path = os.path.join(actual_server_path, "eula.txt")
+
+        os.makedirs(actual_server_path, exist_ok=True)
 
         if not os.path.exists(eula_path):
             with open(eula_path, "w") as f:
@@ -506,9 +511,26 @@ class Window(QMainWindow):
         mcVersion = version
         
         installerName = (f"forge-{mcVersion}-{forgeVersion}-installer.jar")
+        # Comprobar si el instalador ya existe
         if not os.path.exists(f"{jars_path}/{installerName}"):
             mc_server_utils.downloadJARInstallerForge(mcVersion, forgeVersion, f"{jars_path}/{installerName}")
-        #Buscar la versión de Forge
+        
+        os.makedirs(os.path.join(server_path, nombre), exist_ok=True)
+        
+        command = [
+            "java",
+            "-jar",
+            os.path.join(jars_path, installerName),
+            "--installServer"
+            ]
+
+        subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
+        
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore)
+        
+        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/forge-{mcVersion}-{forgeVersion}-shim.jar")
+        dialog.accept()
+
          
     def setup_minecraft_server_vanilla(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
         nombreJar = f"{version}_server_vanilla.jar"
@@ -519,24 +541,27 @@ class Window(QMainWindow):
                 f"{jars_path}/{nombreJar}"
             )
 
-        # Aquí aceptamos la EULA automáticamente
-        self.aceptar_eula(base_path, nombre)
-        
-        ruta = os.path.join(base_path, "servers", nombre)
-        if hardcore:
-            self.writeProperties(ruta, "hardcore=true\n")
-        if seed:
-            self.writeProperties(ruta, f"level-seed={seed}\n")
-            
-        shutil.copy("minecraft/ico/server-icon.png", f"{base_path}/servers/{nombre}/")
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore)
         # Lanzamos el servidor
-        self.startServer(nombre, ram_min, ram_max, f"{base_path}/jars/{nombreJar}")
+        self.startServer(nombre, ram_min, ram_max, f"{jars_path}/{nombreJar}")
 
         print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB.")
         # Recargar la lista de servidores
         self.main_window.listServers.clear()
         self.reloadServers()
         dialog.accept()
+
+    def writeBeforeLaunchSettings(self, nombre, seed, hardcore):
+        ruta = os.path.join(server_path, nombre)
+        # Aquí aceptamos la EULA automáticamente
+        self.aceptar_eula(base_path, nombre)
+
+        if hardcore:
+            self.writeProperties(ruta, "hardcore=true\n")
+        if seed:
+            self.writeProperties(ruta, f"level-seed={seed}\n")
+
+        shutil.copy("minecraft/ico/server-icon.png", f"{server_path}/{nombre}/")
 
     def startServer(self, nombre, ram_min, ram_max, rutaJar):
 
