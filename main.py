@@ -506,6 +506,10 @@ class Window(QMainWindow):
         if not nombre.strip():
             self.showWarningDialog("El nombre del servidor no puede estar vacío.", "Error al crear servidor")
             return
+        
+        if os.path.exists(os.path.join(server_path, nombre)):
+            self.showWarningDialog(f"Ya existe un servidor con el nombre '{nombre}'. Por favor, elige otro nombre.", "Error al crear servidor")
+            return
         if tipo == "Vanilla":
             self.setup_minecraft_server_vanilla(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
         elif tipo == "Forge":
