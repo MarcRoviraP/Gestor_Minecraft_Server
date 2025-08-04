@@ -294,13 +294,25 @@ class Window(QMainWindow):
             version = "N/A"
             
             try:
-
+                tipo = ""
+                rutaJar = ""
+                ram_min = 1024
+                ram_max = 2048
                 with open(f"{server_path}/{server}/versions.txt", "r") as f:
                     version = f.readline().strip()
-                nombreJar = f"{version}_server_vanilla.jar"
-                rutaJar = os.path.join(jars_path, nombreJar)
-            
-                button.clicked.connect(partial(self.startServer, server, 1024, 2048, rutaJar))
+                    tipo = f.readline().strip()
+                    ram_min = int(f.readline().strip())
+                    ram_max = int(f.readline().strip())
+                if tipo == "Vanilla":
+                    
+                    nombreJar = f"{version}_server_vanilla.jar"
+                    rutaJar = os.path.join(jars_path, nombreJar)
+                elif tipo == "Forge":
+                    lista = os.listdir(f"{server_path}/{server}")
+                    jar = [f for f in lista if f.endswith(".jar")]
+                    rutaJar = os.path.join(server_path, server, jar[0]) if jar else ""
+
+                button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, rutaJar))
                 folderButton.clicked.connect(partial(QDesktopServices.openUrl, QUrl.fromLocalFile(uriServer)))
 
             except :
@@ -316,7 +328,7 @@ class Window(QMainWindow):
                 print(f"No se encontró la carpeta versions o JAR para el servidor {server}.")
             img.setPixmap(ico.pixmap(64, 64))
         
-            versionLabel = QLabel(f"Versión: {version}")
+            versionLabel = QLabel(f"Versión: {version} ({tipo})")
             layoutInfo = QVBoxLayout()
             layoutInfo.addWidget(nombre)
             layoutInfo.addWidget(versionLabel)
@@ -526,9 +538,9 @@ class Window(QMainWindow):
             ]
 
         subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
-        
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version)
-        
+
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
+
         self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/forge-{mcVersion}-{forgeVersion}-shim.jar")
         dialog.accept()
 
@@ -542,9 +554,9 @@ class Window(QMainWindow):
                 f"{jars_path}/{nombreJar}"
             )
 
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore,version)
-        
-        
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version,tipo,ram_min, ram_max)
+
+
         # Lanzamos el servidor
         self.startServer(nombre, ram_min, ram_max, f"{jars_path}/{nombreJar}")
 
@@ -554,15 +566,17 @@ class Window(QMainWindow):
         self.reloadServers()
         dialog.accept()
 
-    def writeBeforeLaunchSettings(self, nombre, seed, hardcore, version):
+    def writeBeforeLaunchSettings(self, nombre, seed, hardcore, version,tipo,ram_min=1024, ram_max=2048):
         ruta = os.path.join(server_path, nombre)
         # Aquí aceptamos la EULA automáticamente
         self.aceptar_eula(base_path, nombre)
 
         if not os.path.exists(f"{ruta}/versions.txt"):
             with open(f"{ruta}/versions.txt", "w") as f:
-                f.write(f"{version}\n"
-                        )
+                f.write(f"{version}\n")
+                f.write(f"{tipo}\n")
+                f.write(f"{ram_min}\n")
+                f.write(f"{ram_max}\n")
         if hardcore:
             self.writeProperties(ruta, "hardcore=true\n")
         if seed:
