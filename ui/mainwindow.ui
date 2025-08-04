@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1117</width>
+    <width>1392</width>
     <height>661</height>
    </rect>
   </property>
@@ -146,7 +146,7 @@ QScrollBar::add-line, QScrollBar::sub-line {
      <rect>
       <x>30</x>
       <y>40</y>
-      <width>341</width>
+      <width>431</width>
       <height>571</height>
      </rect>
     </property>
@@ -154,8 +154,8 @@ QScrollBar::add-line, QScrollBar::sub-line {
    <widget class="QPushButton" name="createServerBtn">
     <property name="geometry">
      <rect>
-      <x>750</x>
-      <y>550</y>
+      <x>500</x>
+      <y>540</y>
       <width>121</width>
       <height>61</height>
      </rect>
@@ -167,7 +167,7 @@ QScrollBar::add-line, QScrollBar::sub-line {
    <widget class="QWidget" name="configurePropertiesWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>390</x>
+      <x>490</x>
       <y>40</y>
       <width>691</width>
       <height>471</height>
@@ -478,7 +478,7 @@ QScrollBar::add-line, QScrollBar::sub-line {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1117</width>
+     <width>1392</width>
      <height>24</height>
     </rect>
    </property>

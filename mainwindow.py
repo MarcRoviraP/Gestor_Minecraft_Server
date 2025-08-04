@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1117, 661)
+        MainWindow.resize(1392, 661)
         MainWindow.setStyleSheet("/* =============== COLORES BASE =============== */\n"
 "* {\n"
 "    color: #ffffff;\n"
@@ -141,13 +141,13 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.listServers = QtWidgets.QListWidget(parent=self.centralwidget)
-        self.listServers.setGeometry(QtCore.QRect(30, 40, 341, 571))
+        self.listServers.setGeometry(QtCore.QRect(30, 40, 431, 571))
         self.listServers.setObjectName("listServers")
         self.createServerBtn = QtWidgets.QPushButton(parent=self.centralwidget)
-        self.createServerBtn.setGeometry(QtCore.QRect(750, 550, 121, 61))
+        self.createServerBtn.setGeometry(QtCore.QRect(500, 540, 121, 61))
         self.createServerBtn.setObjectName("createServerBtn")
         self.configurePropertiesWidget = QtWidgets.QWidget(parent=self.centralwidget)
-        self.configurePropertiesWidget.setGeometry(QtCore.QRect(390, 40, 691, 471))
+        self.configurePropertiesWidget.setGeometry(QtCore.QRect(490, 40, 691, 471))
         self.configurePropertiesWidget.setObjectName("configurePropertiesWidget")
         self.widgetWhiteList = QtWidgets.QWidget(parent=self.configurePropertiesWidget)
         self.widgetWhiteList.setGeometry(QtCore.QRect(350, 20, 351, 361))
@@ -294,7 +294,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_5.addWidget(self.saveProperties)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1117, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1392, 24))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)

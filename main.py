@@ -277,78 +277,100 @@ class Window(QMainWindow):
     def reloadServers(self):
         self.main_window.listServers.clear()
         servidores = os.listdir(server_path)
+    
         for server in servidores:
-            uriServer = f"{server_path}/{server}"
+            uri_server = os.path.join(server_path, server)
             widget = QWidget()
-            layout  = QHBoxLayout()
+            layout = QHBoxLayout(widget)
+            layout.setContentsMargins(10, 10, 10, 10)
+            layout.setSpacing(15)
+    
+            # Icono servidor
             img = QLabel()
+            icon_path = os.path.join(uri_server, "server-icon.png")
+            if os.path.exists(icon_path):
+                ico = QIcon(icon_path)
+                img.setPixmap(ico.pixmap(64, 64))
+            else:
+                img.setPixmap(QPixmap(64, 64))  # Placeholder vacío
+    
+            # Nombre
             nombre = QLabel(server)
-            ico = QIcon(f"{uriServer}/server-icon.png")
-            button = QPushButton( "START")
-            folderIcon = QIcon("minecraft/ico/folder.png")
-            
-            folderButton = QPushButton(folderIcon, "")
-            folderButton.setProperty("btnType", "icon")
-            folderButton.setToolTip("Abrir carpeta del servidor")
-
+            nombre.setStyleSheet("font-weight: bold; font-size: 14px;")
+    
+            # Version info
             version = "N/A"
-            
+            tipo = "Desconocido"
+            ruta_jar = ""
+            ram_min = 1024
+            ram_max = 2048
+    
+            version_file = os.path.join(uri_server, "versions.txt")
             try:
-                tipo = ""
-                rutaJar = ""
-                ram_min = 1024
-                ram_max = 2048
-                with open(f"{server_path}/{server}/versions.txt", "r") as f:
+                with open(version_file, "r") as f:
                     version = f.readline().strip()
                     tipo = f.readline().strip()
                     ram_min = int(f.readline().strip())
                     ram_max = int(f.readline().strip())
+    
                 if tipo == "Vanilla":
-                    
-                    nombreJar = f"{version}_server_vanilla.jar"
-                    rutaJar = os.path.join(jars_path, nombreJar)
+                    nombre_jar = f"{version}_server_vanilla.jar"
+                    ruta_jar = os.path.join(jars_path, nombre_jar)
                 elif tipo == "Forge":
-                    lista = os.listdir(f"{server_path}/{server}")
-                    jar = [f for f in lista if f.endswith(".jar")]
-                    rutaJar = os.path.join(server_path, server, jar[0]) if jar else ""
-
-                button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, rutaJar))
-                folderButton.clicked.connect(partial(QDesktopServices.openUrl, QUrl.fromLocalFile(uriServer)))
-
-            except :
-                button.setEnabled(False)
-                button.setText("Recargar la APP")
-                # Usar QTimer para recargar la lista después de 10 segundos
-                # Evitar crear múltiples timers: solo crear uno si no hay otro activo
+                    jars = [f for f in os.listdir(uri_server) if f.endswith(".jar")]
+                    ruta_jar = os.path.join(uri_server, jars[0]) if jars else ""
+    
+            except Exception as e:
+                print(f"Error al leer '{version_file}' en '{server}': {e}")
+                start_server_button = QPushButton("Recargar la APP")
+                start_server_button.setEnabled(False)
                 if not hasattr(self, "_reload_timer") or not self._reload_timer.isActive():
                     self._reload_timer = QTimer(self)
                     self._reload_timer.setSingleShot(True)
                     self._reload_timer.timeout.connect(self.reloadServers)
                     self._reload_timer.start(10000)
-                print(f"No se encontró la carpeta versions o JAR para el servidor {server}.")
-            img.setPixmap(ico.pixmap(64, 64))
-        
-            versionLabel = QLabel(f"Versión: {version} ({tipo})")
-            layoutInfo = QVBoxLayout()
-            layoutInfo.addWidget(nombre)
-            layoutInfo.addWidget(versionLabel)
-            
+            else:
+                # Botón iniciar servidor
+                start_server_button = QPushButton("START")
+                start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar))
+    
+            # Botón carpeta
+            folder_button = QPushButton(QIcon("minecraft/ico/folder.png"), "")
+            folder_button.setToolTip("Abrir carpeta del servidor")
+            folder_button.setProperty("btnType", "icon")
+            folder_button.setFixedSize(32, 32)
+            folder_button.clicked.connect(partial(QDesktopServices.openUrl, QUrl.fromLocalFile(uri_server)))
+    
+            # Botón Mods si aplica
+            mods_button = QPushButton("Mods")
+            mods_button.setFixedHeight(32)
+    
+            # Layout texto
+            version_label = QLabel(f"Versión: {version} ({tipo})")
+            version_label.setStyleSheet("color: gray; font-size: 12px;")
+    
+            info_layout = QVBoxLayout()
+            info_layout.addWidget(nombre)
+            info_layout.addWidget(version_label)
+    
+            # Añadir al layout principal
             layout.addWidget(img)
-            layout.addLayout(layoutInfo)
+            layout.addLayout(info_layout)
             layout.addStretch()
-            layout.addWidget(button)
-            layout.addWidget(folderButton)
-            widget.setLayout(layout)
-        
+            layout.addWidget(folder_button)
+            if tipo.lower() != "vanilla":
+                layout.addWidget(mods_button)
+            layout.addWidget(start_server_button)
+    
+            # Finalizar item en QListWidget
             item = QListWidgetItem()
-            item.setData(Qt.ItemDataRole.UserRole, server)  # Guardar el nombre del servidor
             item.setSizeHint(widget.sizeHint())
-
+            item.setData(Qt.ItemDataRole.UserRole, server)
             self.main_window.listServers.addItem(item)
             self.main_window.listServers.setItemWidget(item, widget)
+    
         self.main_window.listServers.itemClicked.connect(self.handle_item_click)
-
-        
+       
     def handle_item_click(self, item):
         self.main_window.configurePropertiesWidget.setVisible(True)
         serverName = item.data(Qt.ItemDataRole.UserRole)
