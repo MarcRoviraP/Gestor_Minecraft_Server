@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1392, 661)
+        MainWindow.resize(1236, 661)
         MainWindow.setStyleSheet("/* =============== COLORES BASE =============== */\n"
 "* {\n"
 "    color: #ffffff;\n"
@@ -141,10 +141,10 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.listServers = QtWidgets.QListWidget(parent=self.centralwidget)
-        self.listServers.setGeometry(QtCore.QRect(30, 40, 431, 571))
+        self.listServers.setGeometry(QtCore.QRect(30, 40, 451, 571))
         self.listServers.setObjectName("listServers")
         self.createServerBtn = QtWidgets.QPushButton(parent=self.centralwidget)
-        self.createServerBtn.setGeometry(QtCore.QRect(500, 540, 121, 61))
+        self.createServerBtn.setGeometry(QtCore.QRect(1070, 540, 121, 61))
         self.createServerBtn.setObjectName("createServerBtn")
         self.configurePropertiesWidget = QtWidgets.QWidget(parent=self.centralwidget)
         self.configurePropertiesWidget.setGeometry(QtCore.QRect(490, 40, 691, 471))
@@ -173,7 +173,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.addWidget(self.buttonAddWhiteList)
         self.layoutWhiteList.addLayout(self.horizontalLayout_6)
         self.layoutWidget1 = QtWidgets.QWidget(parent=self.configurePropertiesWidget)
-        self.layoutWidget1.setGeometry(QtCore.QRect(20, 20, 301, 416))
+        self.layoutWidget1.setGeometry(QtCore.QRect(20, 20, 301, 443))
         self.layoutWidget1.setObjectName("layoutWidget1")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.layoutWidget1)
         self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
@@ -292,9 +292,14 @@ class Ui_MainWindow(object):
         self.saveProperties = QtWidgets.QPushButton(parent=self.layoutWidget1)
         self.saveProperties.setObjectName("saveProperties")
         self.verticalLayout_5.addWidget(self.saveProperties)
+        self.modsListWidget = QtWidgets.QListWidget(parent=self.centralwidget)
+        self.modsListWidget.setEnabled(True)
+        self.modsListWidget.setGeometry(QtCore.QRect(560, 50, 491, 541))
+        self.modsListWidget.setSelectionRectVisible(False)
+        self.modsListWidget.setObjectName("modsListWidget")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1392, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1236, 24))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)

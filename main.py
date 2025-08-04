@@ -12,6 +12,7 @@ from PyQt6.QtGui import *
 from functools import partial
 
 from fs_utils import mkdir_if_not_exists
+from iconDownloader import IconDownloader
 from mainwindow import Ui_MainWindow
 import mc_server_utils
 
@@ -42,6 +43,8 @@ class Window(QMainWindow):
         self.gamemode_radio_group.addButton(self.main_window.creativeBtn, 1)
         self.gamemode_radio_group.addButton(self.main_window.adventureBtn, 2)
         self.gamemode_radio_group.addButton(self.main_window.spectatorBtn, 3)
+        
+        self.main_window.modsListWidget.setVisible(False)
 
         # Whitelist 
         self.main_window.configurePropertiesWidget.setVisible(False)
@@ -221,7 +224,8 @@ class Window(QMainWindow):
         
         with open(white_list_path, 'r') as f:
             white_list = json.load(f)
-        
+        self.thread_pool = getattr(self, 'thread_pool', QThreadPool())
+        self.icon_labels = {}  # para mapear widgets y actualizarlos luego
         for entry in white_list:
             nameTag = entry.get('name', 'Unknown')
             item = QListWidgetItem()
@@ -231,17 +235,14 @@ class Window(QMainWindow):
             borrarButton.setIcon(QIcon("minecraft/ico/delete.png"))
             borrarButton.setToolTip("Borrar de la lista blanca")
             borrarButton.clicked.connect(partial(self.removeUserFromWhiteList, entry))
-            try:
-                avatar_url = f"https://minotar.net/avatar/{nameTag}/32"
-                avatar_pixmap = QPixmap()
-                avatar_pixmap.loadFromData(requests.get(avatar_url).content)
-                icon = QIcon(avatar_pixmap)
-            except Exception as e:
-                print(f"Error al cargar el avatar de {nameTag}: {e}")
-                icon = QIcon("minecraft/ico/default_avatar.png")
-            item.setIcon(icon)
+            
+            iconLabel = QLabel()
+            iconLabel.setFixedSize(32, 32)
+            self.icon_labels[entry.get('name', 'Unknown')] = iconLabel
+
             widget = QWidget()
             layout = QHBoxLayout()
+            layout.addWidget(iconLabel)
             layout.addWidget(QLabel(nameTag))
             layout.addWidget(borrarButton)
             layout.addStretch()
@@ -249,6 +250,12 @@ class Window(QMainWindow):
             item.setSizeHint(widget.sizeHint())
             self.main_window.whiteList.addItem(item)
             self.main_window.whiteList.setItemWidget(item, widget)
+            
+            avatar_url = f"https://minotar.net/avatar/{nameTag}/32"
+            
+            if avatar_url:
+                downloader = IconDownloader(avatar_url, self.icon_ready, iconLabel)
+                self.thread_pool.start(downloader)
             
             
     def removeUserFromWhiteList(self, entry):
@@ -277,14 +284,14 @@ class Window(QMainWindow):
     def reloadServers(self):
         self.main_window.listServers.clear()
         servidores = os.listdir(server_path)
-    
+
         for server in servidores:
             uri_server = os.path.join(server_path, server)
             widget = QWidget()
             layout = QHBoxLayout(widget)
             layout.setContentsMargins(10, 10, 10, 10)
             layout.setSpacing(15)
-    
+
             # Icono servidor
             img = QLabel()
             icon_path = os.path.join(uri_server, "server-icon.png")
@@ -293,18 +300,18 @@ class Window(QMainWindow):
                 img.setPixmap(ico.pixmap(64, 64))
             else:
                 img.setPixmap(QPixmap(64, 64))  # Placeholder vacío
-    
+
             # Nombre
             nombre = QLabel(server)
             nombre.setStyleSheet("font-weight: bold; font-size: 14px;")
-    
+
             # Version info
             version = "N/A"
             tipo = "Desconocido"
             ruta_jar = ""
             ram_min = 1024
             ram_max = 2048
-    
+
             version_file = os.path.join(uri_server, "versions.txt")
             try:
                 with open(version_file, "r") as f:
@@ -312,14 +319,14 @@ class Window(QMainWindow):
                     tipo = f.readline().strip()
                     ram_min = int(f.readline().strip())
                     ram_max = int(f.readline().strip())
-    
+
                 if tipo == "Vanilla":
                     nombre_jar = f"{version}_server_vanilla.jar"
                     ruta_jar = os.path.join(jars_path, nombre_jar)
                 elif tipo == "Forge":
                     jars = [f for f in os.listdir(uri_server) if f.endswith(".jar")]
                     ruta_jar = os.path.join(uri_server, jars[0]) if jars else ""
-    
+
             except Exception as e:
                 print(f"Error al leer '{version_file}' en '{server}': {e}")
                 start_server_button = QPushButton("Recargar la APP")
@@ -333,26 +340,28 @@ class Window(QMainWindow):
                 # Botón iniciar servidor
                 start_server_button = QPushButton("START")
                 start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar))
-    
+
             # Botón carpeta
             folder_button = QPushButton(QIcon("minecraft/ico/folder.png"), "")
             folder_button.setToolTip("Abrir carpeta del servidor")
             folder_button.setProperty("btnType", "icon")
             folder_button.setFixedSize(32, 32)
             folder_button.clicked.connect(partial(QDesktopServices.openUrl, QUrl.fromLocalFile(uri_server)))
-    
+
             # Botón Mods si aplica
             mods_button = QPushButton("Mods")
+            mods_button.setToolTip("Abrir lista de mods")
             mods_button.setFixedHeight(32)
-    
+            mods_button.clicked.connect(partial(self.showMods, server, tipo, version))
+
             # Layout texto
             version_label = QLabel(f"Versión: {version} ({tipo})")
             version_label.setStyleSheet("color: gray; font-size: 12px;")
-    
+
             info_layout = QVBoxLayout()
             info_layout.addWidget(nombre)
             info_layout.addWidget(version_label)
-    
+
             # Añadir al layout principal
             layout.addWidget(img)
             layout.addLayout(info_layout)
@@ -361,18 +370,90 @@ class Window(QMainWindow):
             if tipo.lower() != "vanilla":
                 layout.addWidget(mods_button)
             layout.addWidget(start_server_button)
-    
+
             # Finalizar item en QListWidget
             item = QListWidgetItem()
             item.setSizeHint(widget.sizeHint())
             item.setData(Qt.ItemDataRole.UserRole, server)
             self.main_window.listServers.addItem(item)
             self.main_window.listServers.setItemWidget(item, widget)
-    
+
         self.main_window.listServers.itemClicked.connect(self.handle_item_click)
        
+    def showMods(self, server, tipo, version):
+        self.main_window.modsListWidget.clear()
+        self.main_window.modsListWidget.setVisible(True)
+        self.main_window.configurePropertiesWidget.setVisible(False)
+    
+        mods = mc_server_utils.obtener_todos_mods(tipo, version)
+        if not mods:
+            self.showWarningDialog("No se encontraron mods para este servidor.", "No hay mods")
+            return
+    
+        self.thread_pool = getattr(self, 'thread_pool', QThreadPool())  # asegúrate de tener uno
+        self.icon_labels = {}  # para mapear widgets y actualizarlos luego
+    
+        for mod in mods:
+            widget = QWidget()
+            layout = QHBoxLayout(widget)
+            layout.setContentsMargins(5, 5, 5, 5)
+    
+            # Etiqueta del ícono
+            icon_label = QLabel()
+            icon_label.setFixedSize(32, 32)
+    
+            # Guardar la referencia por si se necesita actualizar luego
+            self.icon_labels[mod['slug']] = icon_label
+    
+            # Texto del mod
+            name_label = QLabel(mod['title'])
+            version_label = QLabel(f"Versión: {mod['latest_version']}")
+            name_label.setStyleSheet("font-weight: bold")
+            info_layout = QVBoxLayout()
+            info_layout.addWidget(name_label)
+            info_layout.addWidget(version_label)
+    
+            # Botón de descargar
+            download_button = QPushButton("Descargar")
+            download_button.clicked.connect(partial(self.descargar_mod, mod['slug'], mod['latest_version']))
+    
+            # Montar layout
+            layout.addWidget(icon_label)
+            layout.addLayout(info_layout)
+            layout.addStretch()
+            layout.addWidget(download_button)
+    
+            # Insertar en QListWidget
+            item = QListWidgetItem()
+            item.setSizeHint(widget.sizeHint())
+            self.main_window.modsListWidget.addItem(item)
+            self.main_window.modsListWidget.setItemWidget(item, widget)
+    
+            # Lanzar descarga del ícono en segundo plano
+            url = mod.get('icon_url', '')
+            if url:
+                downloader = IconDownloader(url, self.icon_ready, icon_label)
+                self.thread_pool.start(downloader)
+
+    def descargar_mod(self, slug, version):
+        print(f"Descargando mod {slug} versión {version}...")
+    def icon_ready(self, url, img_data, icon_label):
+        
+        try:
+            if img_data:
+                pixmap = QPixmap()
+                pixmap.loadFromData(img_data)
+                icon_label.setPixmap(
+                    pixmap.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                )
+        except Exception as e:
+            print(f"Error al procesar el ícono: {e}")
+
+            
+        
     def handle_item_click(self, item):
         self.main_window.configurePropertiesWidget.setVisible(True)
+        self.main_window.modsListWidget.setVisible(False)
         serverName = item.data(Qt.ItemDataRole.UserRole)
         
         self.loadProperties(serverName)
