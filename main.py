@@ -52,6 +52,8 @@ class Window(QMainWindow):
         def on_whitelist_toggled(checked):
             if checked:
                 self.reloadWhiteList()
+                print("Reload checked")
+
             self.main_window.widgetWhiteList.setVisible(checked)
         self.main_window.Whitelist.toggled.connect(on_whitelist_toggled)
 
@@ -123,7 +125,7 @@ class Window(QMainWindow):
 
         with open(properties_path, 'r') as f:
             properties = f.read()
-            print(f"Propiedades del servidor {server}:\n{properties}")
+            #print(f"Propiedades del servidor {server}:\n{properties}")
 
         for line in properties.splitlines():
             if line.startswith("difficulty="):
@@ -172,6 +174,7 @@ class Window(QMainWindow):
                 
         # Recargar la lista blanca de forma asíncrona después de cargar las propiedades
         QTimer.singleShot(10, self.reloadWhiteList)
+        print("Reload load properties")
 
     def insertUserWhiteList(self):
         user_name = self.main_window.nametagPlayer.text()
@@ -208,9 +211,11 @@ class Window(QMainWindow):
                 f.truncate()
 
             self.reloadWhiteList()
+            print("Reload insert")
             self.main_window.nametagPlayer.clear()
 
     def reloadWhiteList(self):
+        
         self.main_window.whiteList.clear()
         ruta = os.path.join(server_path, self.lastServer)
         if not os.path.exists(ruta):
@@ -224,8 +229,8 @@ class Window(QMainWindow):
         
         with open(white_list_path, 'r') as f:
             white_list = json.load(f)
-        self.thread_pool = getattr(self, 'thread_pool', QThreadPool())
-        self.icon_labels = {}  # para mapear widgets y actualizarlos luego
+        self.thread_pool_users = getattr(self, 'thread_pool_users', QThreadPool())
+        icon_labels = {}  # para mapear widgets y actualizarlos luego
         for entry in white_list:
             nameTag = entry.get('name', 'Unknown')
             item = QListWidgetItem()
@@ -238,7 +243,7 @@ class Window(QMainWindow):
             
             iconLabel = QLabel()
             iconLabel.setFixedSize(32, 32)
-            self.icon_labels[entry.get('name', 'Unknown')] = iconLabel
+            icon_labels[nameTag] = iconLabel
 
             widget = QWidget()
             layout = QHBoxLayout()
@@ -255,7 +260,7 @@ class Window(QMainWindow):
             
             if avatar_url:
                 downloader = IconDownloader(avatar_url, self.icon_ready, iconLabel)
-                self.thread_pool.start(downloader)
+                self.thread_pool_users.start(downloader)
             
             
     def removeUserFromWhiteList(self, entry):
@@ -415,8 +420,8 @@ class Window(QMainWindow):
     
             # Botón de descargar
             download_button = QPushButton("Descargar")
-            download_button.clicked.connect(partial(self.descargar_mod, mod['slug'], mod['latest_version']))
-    
+            download_button.clicked.connect(partial(self.descargar_mod, mod['slug'], mod['latest_version'],server))
+
             # Montar layout
             layout.addWidget(icon_label)
             layout.addLayout(info_layout)
@@ -435,8 +440,11 @@ class Window(QMainWindow):
                 downloader = IconDownloader(url, self.icon_ready, icon_label)
                 self.thread_pool.start(downloader)
 
-    def descargar_mod(self, slug, version):
-        print(f"Descargando mod {slug} versión {version}...")
+    def descargar_mod(self, slug, version,server):
+        destino = os.path.join(server_path,server, "mods")
+        mc_server_utils.descargarMod(version, destino)
+
+        print(f"Descargando mod {slug} versión {version} a {destino}")
     def icon_ready(self, url, img_data, icon_label):
         
         try:
@@ -447,8 +455,7 @@ class Window(QMainWindow):
                     pixmap.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 )
         except Exception as e:
-            print(f"Error al procesar el ícono: {e}")
-
+            pass
             
         
     def handle_item_click(self, item):

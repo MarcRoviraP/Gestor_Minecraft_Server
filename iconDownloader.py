@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QRunnable, QThreadPool, pyqtSignal, QObject
+from PyQt6.QtCore import QRunnable
 import requests
 
 class IconDownloader(QRunnable):
@@ -15,4 +15,9 @@ class IconDownloader(QRunnable):
         except Exception as e:
             print(f"[IconDownloader] Error downloading icon: {e}")
             img_data = None
-        self.callback(self.url, img_data, self.widget)
+
+        # Verifica si el widget sigue existiendo y está visible
+        if self.widget is not None:
+            self.callback(self.url, img_data, self.widget)
+        else:
+            print("[IconDownloader] Widget destruido, no se llama al callback.")

@@ -102,6 +102,9 @@ def getAllForgeVersions():
 
 def downloadJARInstallerForge(mcVersion, forgeVersion, ruta_destino):
     url = f"https://maven.minecraftforge.net/net/minecraftforge/forge/{mcVersion}-{forgeVersion}/forge-{mcVersion}-{forgeVersion}-installer.jar"
+    download_file(ruta_destino, url)
+
+def download_file(ruta_destino, url):
     response = requests.get(url, stream=True)
     
     if response.status_code == 200:
@@ -133,3 +136,23 @@ def obtener_todos_mods(tipo,version):
         print(f"Descargados {len(todos_mods)} mods hasta ahora...")
 
     return todos_mods
+
+def descargarMod(mod_id, ruta_destino):
+    url = f"https://api.modrinth.com/v2/version/{mod_id}"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        if data:
+            files = data.get("files", [])
+            download_url = files[0].get("url") 
+            mod_name = files[0].get("filename")
+            mod_path = os.path.join(ruta_destino, f"{mod_name}")
+
+            download_file(mod_path, download_url)
+            return mod_path
+        else:
+            print("No se encontró ninguna versión del mod.")
+    else:
+        print("Error al obtener el mod:", response.status_code)
+    return None
