@@ -2,6 +2,7 @@ import requests
 import os
 import re
 import json
+import psutil
 
 globalforgeVersions = []
 def obtener_versiones_minecraft():
@@ -156,3 +157,31 @@ def descargarMod(mod_id, ruta_destino):
     else:
         print("Error al obtener el mod:", response.status_code)
     return None
+
+def buscarProcesosMinecraft():
+    
+    listaServer = []
+    print("🔍 Buscando procesos de Minecraft...\n")
+
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            # Solo procesos que usan Java
+            if "java" in proc.info['name'].lower():
+                cmdline = " ".join(proc.info['cmdline'])
+                
+                if any(keyword in cmdline for keyword in ["vanilla", "forge", "fabric", "paper", "spigot"]):
+                    
+                    path = cmdline.replace("\\", "/")
+                    path = path.split("servers")[1]
+                    nombre = path.split("/")[1]
+                    
+                    listaServer.append(nombre)
+                    print(nombre)
+                else:
+                    # Java pero no identificado como servidor MC
+                    pass
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+            print("Error al acceder al proceso:", e)
+    return listaServer
+    

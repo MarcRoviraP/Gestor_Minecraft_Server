@@ -21,11 +21,14 @@ base_path = os.path.join(os.path.expanduser("~"), "MinecraftServers")
 server_path = os.path.join(base_path, "servers")
 jars_path = os.path.join(base_path, "jars")
 
+
 [mkdir_if_not_exists(path) for path in [server_path, jars_path]]
 
 class Window(QMainWindow):
     def __init__(self,parent=None):
         super().__init__(parent)
+        self.listaServidoresOnline = []
+        self.listaServidoresOnline = mc_server_utils.buscarProcesosMinecraft()
         self.lastServer = ""
         self.setWindowTitle("Gestor de Servidores Minecraft")
         self.main_window = Ui_MainWindow()
@@ -49,6 +52,7 @@ class Window(QMainWindow):
         # Whitelist 
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.main_window.widgetWhiteList.setVisible(self.main_window.Whitelist.isChecked())
+
         def on_whitelist_toggled(checked):
             if checked:
                 self.reloadWhiteList()
@@ -297,6 +301,9 @@ class Window(QMainWindow):
             layout.setContentsMargins(10, 10, 10, 10)
             layout.setSpacing(15)
 
+
+            if server in self.listaServidoresOnline:
+                widget.setStyleSheet("background-color: #d4edda;")
             # Icono servidor
             img = QLabel()
             icon_path = os.path.join(uri_server, "server-icon.png")
@@ -325,10 +332,7 @@ class Window(QMainWindow):
                     ram_min = int(f.readline().strip())
                     ram_max = int(f.readline().strip())
 
-                if tipo == "Vanilla":
-                    nombre_jar = f"{version}_server_vanilla.jar"
-                    ruta_jar = os.path.join(jars_path, nombre_jar)
-                elif tipo == "Forge":
+             
                     jars = [f for f in os.listdir(uri_server) if f.endswith(".jar")]
                     ruta_jar = os.path.join(uri_server, jars[0]) if jars else ""
 
@@ -672,9 +676,11 @@ class Window(QMainWindow):
 
         self.writeBeforeLaunchSettings(nombre, seed, hardcore, version,tipo,ram_min, ram_max)
 
-
+        rutaJarInicial = os.path.join(jars_path, nombreJar)
+        rutaJarFinal = os.path.join(server_path, nombre, "server_vanilla.jar")
+        shutil.copy(rutaJarInicial, rutaJarFinal)
         # Lanzamos el servidor
-        self.startServer(nombre, ram_min, ram_max, f"{jars_path}/{nombreJar}")
+        self.startServer(nombre, ram_min, ram_max, rutaJarFinal)
 
         print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB.")
         # Recargar la lista de servidores
@@ -724,6 +730,8 @@ class Window(QMainWindow):
                 print("tty not supported")
         else:
             print("os not supported")
+        self.listaServidoresOnline = mc_server_utils.buscarProcesosMinecraft()
+        self.reloadServers()
 
 
 
