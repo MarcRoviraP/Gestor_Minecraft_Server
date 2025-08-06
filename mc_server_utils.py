@@ -138,7 +138,7 @@ def obtener_todos_mods(tipo,version):
 
     return todos_mods
 
-async def descargarMod(mod_id, ruta_destino):
+def descargarMod(mod_id, ruta_destino):
     url = f"https://api.modrinth.com/v2/version/{mod_id}"
     response = requests.get(url)
     
