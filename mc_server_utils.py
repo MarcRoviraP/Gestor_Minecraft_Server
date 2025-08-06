@@ -138,7 +138,7 @@ def obtener_todos_mods(tipo,version):
 
     return todos_mods
 
-def descargarMod(mod_id, ruta_destino):
+async def descargarMod(mod_id, ruta_destino):
     url = f"https://api.modrinth.com/v2/version/{mod_id}"
     response = requests.get(url)
     
@@ -177,11 +177,8 @@ def buscarProcesosMinecraft():
                     
                     listaServer.append(nombre)
                     print(nombre)
-                else:
-                    # Java pero no identificado como servidor MC
-                    pass
 
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+        except Exception as e:
             print("Error al acceder al proceso:", e)
     return listaServer
     
