@@ -49,9 +49,22 @@ class Window(QMainWindow):
         
         self.main_window.modsListWidget.setVisible(False)
 
+
         # Whitelist 
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.main_window.widgetWhiteList.setVisible(self.main_window.Whitelist.isChecked())
+
+        def comprobarServidoresOnline():
+            listaAux = mc_server_utils.buscarProcesosMinecraft()
+
+            if listaAux != self.listaServidoresOnline:
+                self.listaServidoresOnline = listaAux
+                print("Servidores en línea:", self.listaServidoresOnline)
+                self.reloadServers()
+        self.timer = QTimer(self)
+        
+        self.timer.timeout.connect(comprobarServidoresOnline)
+        self.timer.start(5000)  # Comprobar cada 5 segundos
 
         def on_whitelist_toggled(checked):
             if checked:
