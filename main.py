@@ -314,9 +314,15 @@ class Window(QMainWindow):
             layout.setContentsMargins(10, 10, 10, 10)
             layout.setSpacing(15)
 
-
+            # Si el servidor está en línea
             if server in self.listaServidoresOnline:
-                widget.setStyleSheet("background-color: #d4edda;")
+                widget.setStyleSheet("""
+                    QWidget {
+                        background-color: #1f3b4d;       /* Azul petróleo oscuro */
+                        border: 1px solid #2980b9;       /* Azul brillante */
+                        border-radius: 10px;
+                    }
+                """)
             # Icono servidor
             img = QLabel()
             icon_path = os.path.join(uri_server, "server-icon.png")
