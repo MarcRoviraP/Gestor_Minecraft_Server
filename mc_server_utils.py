@@ -3,6 +3,9 @@ import os
 import re
 import json
 import psutil
+import threading
+import asyncio
+import aiohttp
 
 globalforgeVersions = []
 def obtener_versiones_minecraft():
@@ -117,51 +120,75 @@ def download_file(ruta_destino, url):
         print("❌ Error al descargar:", response.status_code)
         
 def obtener_todos_mods(tipo,version):
-    todos_mods = []
-    offset = 0  # offset para paginación, no index
-    limit = 100
+        """
+        Descarga todos los mods de un tipo y versión usando la API de Modrinth.
+        Esta función es un wrapper síncrono para la función asíncrona interna.
+        """
 
-    while True:
-        params = {
-            "limit": limit,
-            "offset": offset,
-            "facets": json.dumps([["project_types:mod"], [f"categories:{tipo}"], [f"versions:{version}"], ["server_side:optional", "server_side:required"]])  # Solo mods para forge
-        }
-        response = requests.get("https://api.modrinth.com/v2/search", params=params)
-        data = response.json()
-        hits = data.get("hits", [])
-        if not hits:
-            break  # no hay más mods que traer
-        todos_mods.extend(hits)
-        offset += limit
-        print(f"Descargados {len(todos_mods)} mods hasta ahora...")
+        async def obtener_todos_mods_async(tipo, version, stop=99999999999999, limit=100):
+            todos_mods = []
+            offset = 0
 
-    return todos_mods
+            async with aiohttp.ClientSession() as session:
+                while True:
+                    params = {
+                        "limit": limit,
+                        "offset": offset,
+                        "facets": json.dumps([
+                            ["project_types:mod"],
+                            [f"categories:{tipo}"],
+                            [f"versions:{version}"],
+                            ["server_side:optional", "server_side:required"]
+                        ])
+                    }
+                    async with session.get("https://api.modrinth.com/v2/search", params=params) as response:
+                        data = await response.json()
+                        hits = data.get("hits", [])
+                        if not hits:
+                            break
+                        todos_mods.extend(hits)
+                        if stop <= len(todos_mods):
+                            break
+                        offset += limit
+                        
+                        print(f"Descargados {len(todos_mods)} mods hasta ahora...")
+
+            return todos_mods
+
+        # Ejecutar la función asíncrona y devolver el resultado
+        return asyncio.run(obtener_todos_mods_async(tipo, version))
 
 def descargarMod(mod_id, ruta_destino):
-    url = f"https://api.modrinth.com/v2/version/{mod_id}"
-    response = requests.get(url)
     
-    if response.status_code == 200:
-        data = response.json()
-        if data:
-            files = data.get("files", [])
-            download_url = files[0].get("url") 
-            mod_name = files[0].get("filename")
-            mod_path = os.path.join(ruta_destino, f"{mod_name}")
+    
+    def descargarModAsync(mod_id, ruta_destino):
+        
+    
+        url = f"https://api.modrinth.com/v2/version/{mod_id}"
+        response = requests.get(url)
 
-            download_file(mod_path, download_url)
-            return mod_path
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                files = data.get("files", [])
+                download_url = files[0].get("url") 
+                mod_name = files[0].get("filename")
+                mod_path = os.path.join(ruta_destino, f"{mod_name}")
+
+                download_file(mod_path, download_url)
+                return mod_path
+            else:
+                print("No se encontró ninguna versión del mod.")
         else:
-            print("No se encontró ninguna versión del mod.")
-    else:
-        print("Error al obtener el mod:", response.status_code)
-    return None
+            print("Error al obtener el mod:", response.status_code)
+        return None
+    hilo = threading.Thread(target=descargarModAsync, args=(mod_id, ruta_destino))
+    hilo.start()
 
-def buscarProcesosMinecraft():
+def getOnlineServers():
     
     listaServer = []
-    print("🔍 Buscando procesos de Minecraft...\n")
+    print("🔍 Buscando servidores de Minecraft...\n")
 
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:

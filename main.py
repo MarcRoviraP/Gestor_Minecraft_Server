@@ -28,7 +28,7 @@ class Window(QMainWindow):
     def __init__(self,parent=None):
         super().__init__(parent)
         self.listaServidoresOnline = []
-        self.listaServidoresOnline = mc_server_utils.buscarProcesosMinecraft()
+        self.listaServidoresOnline = mc_server_utils.getOnlineServers()
         self.lastServer = ""
         self.setWindowTitle("Gestor de Servidores Minecraft")
         self.main_window = Ui_MainWindow()
@@ -730,7 +730,7 @@ class Window(QMainWindow):
                 print("tty not supported")
         else:
             print("os not supported")
-        self.listaServidoresOnline = mc_server_utils.buscarProcesosMinecraft()
+        self.listaServidoresOnline = mc_server_utils.getOnlineServers()
         self.reloadServers()
 
 
