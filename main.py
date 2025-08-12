@@ -49,9 +49,22 @@ class Window(QMainWindow):
         
         self.main_window.modsListWidget.setVisible(False)
 
+
         # Whitelist 
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.main_window.widgetWhiteList.setVisible(self.main_window.Whitelist.isChecked())
+
+        def comprobarServidoresOnline():
+            listaAux = mc_server_utils.buscarProcesosMinecraft()
+
+            if listaAux != self.listaServidoresOnline:
+                self.listaServidoresOnline = listaAux
+                print("Servidores en línea:", self.listaServidoresOnline)
+                self.reloadServers()
+        self.timer = QTimer(self)
+        
+        self.timer.timeout.connect(comprobarServidoresOnline)
+        self.timer.start(5000)  # Comprobar cada 5 segundos
 
         def on_whitelist_toggled(checked):
             if checked:
@@ -301,9 +314,15 @@ class Window(QMainWindow):
             layout.setContentsMargins(10, 10, 10, 10)
             layout.setSpacing(15)
 
-
+            # Si el servidor está en línea
             if server in self.listaServidoresOnline:
-                widget.setStyleSheet("background-color: #d4edda;")
+                widget.setStyleSheet("""
+                    QWidget {
+                        background-color: #1f3b4d;       /* Azul petróleo oscuro */
+                        border: 1px solid #2980b9;       /* Azul brillante */
+                        border-radius: 10px;
+                    }
+                """)
             # Icono servidor
             img = QLabel()
             icon_path = os.path.join(uri_server, "server-icon.png")
@@ -706,32 +725,37 @@ class Window(QMainWindow):
         shutil.copy("minecraft/ico/server-icon.png", f"{server_path}/{nombre}/")
 
     def startServer(self, nombre, ram_min, ram_max, rutaJar):
-
         jar_command = ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", rutaJar, "nogui"]
         jar_command_str = " ".join(jar_command)
         cwd = os.path.join(server_path, nombre)
         operating_system = platform.system().lower()
-
+    
         if operating_system == 'windows':
-            subprocess.Popen(jar_command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            subprocess.Popen(
+                jar_command,
+                cwd=cwd,
+                creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.DETACHED_PROCESS
+            )
+    
         elif operating_system == 'linux':
-            if shutil.which('gnome-terminal'):
-                # Not tested
-                subprocess.Popen(['gnome-terminal', '--'] + jar_command, cwd=cwd)
+            if shutil.which('ptyxis'):
+                subprocess.Popen(['ptyxis', '--', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}'])
+            elif shutil.which('gnome-terminal'):
+                subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
             elif shutil.which('konsole'):
-                # Not tested
                 subprocess.Popen(['konsole', '-e', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
             elif shutil.which('xterm'):
-                # Not tested
                 subprocess.Popen(['xterm', '-e', f'cd "{cwd}" && {jar_command_str}; bash'])
-            elif shutil.which('ptyxis'):
-                subprocess.Popen(['ptyxis', '--', 'bash', '-c', f'cd {cwd} && {jar_command_str}'])
             else:
-                print("tty not supported")
+                # Fallback: ejecuta en segundo plano sin TTY
+                subprocess.Popen(jar_command, cwd=cwd, start_new_session=True)
+    
         else:
-            print("os not supported")
+            print("OS not supported")
+
         self.listaServidoresOnline = mc_server_utils.getOnlineServers()
         self.reloadServers()
+    
 
 
 
