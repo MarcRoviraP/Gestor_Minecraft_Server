@@ -210,7 +210,10 @@ QScrollBar::add-line, QScrollBar::sub-line {
          <item>
           <widget class="QPushButton" name="buttonAddWhiteList">
            <property name="text">
-            <string>ADD Player</string>
+            <string>Player</string>
+           </property>
+           <property name="icon">
+            <iconset theme="QIcon::ThemeIcon::ContactNew"/>
            </property>
           </widget>
          </item>
@@ -472,21 +475,54 @@ QScrollBar::add-line, QScrollBar::sub-line {
      </layout>
     </widget>
    </widget>
-   <widget class="QListWidget" name="modsListWidget">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
+   <widget class="QWidget" name="modWidget" native="true">
     <property name="geometry">
      <rect>
       <x>560</x>
-      <y>50</y>
-      <width>491</width>
-      <height>541</height>
+      <y>20</y>
+      <width>511</width>
+      <height>671</height>
      </rect>
     </property>
-    <property name="selectionRectVisible">
-     <bool>false</bool>
-    </property>
+    <widget class="QWidget" name="">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>491</width>
+       <height>561</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_6">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <property name="leftMargin">
+         <number>230</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="editBuscarMods">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QListWidget" name="modsListWidget">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="selectionRectVisible">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

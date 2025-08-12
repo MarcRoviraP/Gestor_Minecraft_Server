@@ -151,7 +151,6 @@ def obtener_todos_mods(tipo,version):
                             break
                         offset += limit
                         
-                        print(f"Descargados {len(todos_mods)} mods hasta ahora...")
 
             return todos_mods
 

@@ -11,8 +11,9 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from functools import partial
 
+from ImgCache import ImageCache
 from fs_utils import mkdir_if_not_exists
-from iconDownloader import IconDownloader
+from iconDownloader import IconDownloader, IconResult
 from mainwindow import Ui_MainWindow
 import mc_server_utils
 
@@ -25,8 +26,9 @@ jars_path = os.path.join(base_path, "jars")
 [mkdir_if_not_exists(path) for path in [server_path, jars_path]]
 
 class Window(QMainWindow):
-    def __init__(self,parent=None):
+    def __init__(self, cache, parent=None):
         super().__init__(parent)
+        self.cache = cache
         self.listaServidoresOnline = []
         self.listaServidoresOnline = mc_server_utils.getOnlineServers()
         self.lastServer = ""
@@ -47,9 +49,11 @@ class Window(QMainWindow):
         self.gamemode_radio_group.addButton(self.main_window.adventureBtn, 2)
         self.gamemode_radio_group.addButton(self.main_window.spectatorBtn, 3)
         
-        self.main_window.modsListWidget.setVisible(False)
-
-
+        self.main_window.modWidget.setVisible(False)
+        
+        # Timer para buscar mods
+        self.search_timer = QTimer()
+        self.search_timer.setSingleShot(True)
         # Whitelist 
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.main_window.widgetWhiteList.setVisible(self.main_window.Whitelist.isChecked())
@@ -276,7 +280,7 @@ class Window(QMainWindow):
             avatar_url = f"https://minotar.net/avatar/{nameTag}/32"
             
             if avatar_url:
-                downloader = IconDownloader(avatar_url, self.icon_ready, iconLabel)
+                downloader = IconDownloader(avatar_url, self.cache, self.icon_ready, iconLabel)
                 self.thread_pool_users.start(downloader)
             
             
@@ -379,8 +383,7 @@ class Window(QMainWindow):
             mods_button = QPushButton("Mods")
             mods_button.setToolTip("Abrir lista de mods")
             mods_button.setFixedHeight(32)
-            mods_button.clicked.connect(partial(self.showMods, server, tipo, version))
-
+            mods_button.clicked.connect(partial(self.enterModsContext, server, tipo, version))
             # Layout texto
             version_label = QLabel(f"Versión: {version} ({tipo})")
             version_label.setStyleSheet("color: gray; font-size: 12px;")
@@ -407,59 +410,66 @@ class Window(QMainWindow):
 
         self.main_window.listServers.itemClicked.connect(self.handle_item_click)
        
-    def showMods(self, server, tipo, version):
-        self.main_window.modsListWidget.clear()
-        self.main_window.modsListWidget.setVisible(True)
+    def enterModsContext(self, server, tipo, version):
+        
+        self.main_window.modWidget.setVisible(True)
         self.main_window.configurePropertiesWidget.setVisible(False)
-    
+        self.search_timer.timeout.connect(partial(self.showMods, server, tipo, version))
+
+        self.main_window.editBuscarMods.textChanged.connect(partial(self.search_timer.start, 200))  # Iniciar el timer con un delay de 200 ms
+        self.showMods(server, tipo, version)
+
+    def showMods(self, server, tipo, version):
+        filtro = self.main_window.editBuscarMods.text().strip()
+        self.main_window.modsListWidget.clear()
         mods = mc_server_utils.obtener_todos_mods(tipo, version)
         if not mods:
             self.showWarningDialog("No se encontraron mods para este servidor.", "No hay mods")
             return
     
-        self.thread_pool = getattr(self, 'thread_pool', QThreadPool())  # asegúrate de tener uno
-        self.icon_labels = {}  # para mapear widgets y actualizarlos luego
+        self.thread_pool = getattr(self, 'thread_pool', QThreadPool())
+        self.icon_signals = IconResult()
+        self.icon_signals.finished.connect(self.icon_ready)  # Conectar señal a la UI
+    
+        self.icon_labels = {}
     
         for mod in mods:
+            name_label = QLabel(mod['title'])
+            if filtro and not name_label.text().lower().startswith(filtro.lower()):
+                continue
+            
             widget = QWidget()
             layout = QHBoxLayout(widget)
             layout.setContentsMargins(5, 5, 5, 5)
     
-            # Etiqueta del ícono
             icon_label = QLabel()
             icon_label.setFixedSize(32, 32)
-    
-            # Guardar la referencia por si se necesita actualizar luego
             self.icon_labels[mod['slug']] = icon_label
     
-            # Texto del mod
-            name_label = QLabel(mod['title'])
             version_label = QLabel(f"Versión: {mod['latest_version']}")
             name_label.setStyleSheet("font-weight: bold")
             info_layout = QVBoxLayout()
             info_layout.addWidget(name_label)
             info_layout.addWidget(version_label)
     
-            # Botón de descargar
             download_button = QPushButton("Descargar")
-            download_button.clicked.connect(partial(self.descargar_mod, mod['slug'], mod['latest_version'],server))
-
-            # Montar layout
+            download_button.clicked.connect(
+                partial(self.descargar_mod, mod['slug'], mod['latest_version'], server)
+            )
+    
             layout.addWidget(icon_label)
             layout.addLayout(info_layout)
             layout.addStretch()
             layout.addWidget(download_button)
     
-            # Insertar en QListWidget
             item = QListWidgetItem()
             item.setSizeHint(widget.sizeHint())
             self.main_window.modsListWidget.addItem(item)
             self.main_window.modsListWidget.setItemWidget(item, widget)
     
-            # Lanzar descarga del ícono en segundo plano
             url = mod.get('icon_url', '')
             if url:
-                downloader = IconDownloader(url, self.icon_ready, icon_label)
+                downloader = IconDownloader(url, self.cache, icon_label, self.icon_signals)
                 self.thread_pool.start(downloader)
 
     def descargar_mod(self, slug, version,server):
@@ -467,22 +477,20 @@ class Window(QMainWindow):
         mc_server_utils.descargarMod(version, destino)
 
         print(f"Descargando mod {slug} versión {version} a {destino}")
-    def icon_ready(self, url, img_data, icon_label):
-        
+    def icon_ready(self, url, img_data, widget):
         try:
             if img_data:
                 pixmap = QPixmap()
                 pixmap.loadFromData(img_data)
-                icon_label.setPixmap(
-                    pixmap.scaled(32, 32, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                )
-        except Exception as e:
+                widget.setPixmap(pixmap.scaled(32, 32))
+            else:
+                widget.setText("❌")
+        except Exception:
             pass
-            
         
     def handle_item_click(self, item):
         self.main_window.configurePropertiesWidget.setVisible(True)
-        self.main_window.modsListWidget.setVisible(False)
+        self.main_window.modWidget.setVisible(False)
         serverName = item.data(Qt.ItemDataRole.UserRole)
         
         self.loadProperties(serverName)
@@ -758,7 +766,8 @@ if __name__ == "__main__":
     # Create the application
     app = QApplication(sys.argv)
     # Create and show the application's main window
-    win = Window()
+    cache = ImageCache()
+    win = Window(cache)
     win.show()
     # Run the application's main loop
     sys.exit(app.exec())
