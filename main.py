@@ -55,7 +55,7 @@ class Window(QMainWindow):
         self.main_window.widgetWhiteList.setVisible(self.main_window.Whitelist.isChecked())
 
         def comprobarServidoresOnline():
-            listaAux = mc_server_utils.buscarProcesosMinecraft()
+            listaAux = mc_server_utils.getOnlineServers()
 
             if listaAux != self.listaServidoresOnline:
                 self.listaServidoresOnline = listaAux
@@ -319,8 +319,7 @@ class Window(QMainWindow):
                 widget.setStyleSheet("""
                     QWidget {
                         background-color: #1f3b4d;       /* Azul petróleo oscuro */
-                        border: 1px solid #2980b9;       /* Azul brillante */
-                        border-radius: 10px;
+                        margin-bottom: 3px;
                     }
                 """)
             # Icono servidor
@@ -731,11 +730,8 @@ class Window(QMainWindow):
         operating_system = platform.system().lower()
     
         if operating_system == 'windows':
-            subprocess.Popen(
-                jar_command,
-                cwd=cwd,
-                creationflags=subprocess.CREATE_NEW_CONSOLE | subprocess.DETACHED_PROCESS
-            )
+            subprocess.Popen(jar_command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+
     
         elif operating_system == 'linux':
             if shutil.which('ptyxis'):
@@ -753,8 +749,6 @@ class Window(QMainWindow):
         else:
             print("OS not supported")
 
-        self.listaServidoresOnline = mc_server_utils.getOnlineServers()
-        self.reloadServers()
     
 
 
