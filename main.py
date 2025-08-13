@@ -672,6 +672,20 @@ class Window(QMainWindow):
         if not os.path.exists(jarName):
             mc_server_utils.downloadJARFabric(version, jarName)
             print(jarName + " Descargado")
+            
+        os.makedirs(os.path.join(server_path, nombre), exist_ok=True)
+        
+        command = [
+            "java",
+            "-jar",
+            jarName,
+            "--installServer"
+            ]
+
+        subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
+        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/.fabric/server/{version}-server.jar")
+
         dialog.accept()
 
 
