@@ -70,13 +70,13 @@ class Window(QMainWindow):
         self.timer.timeout.connect(comprobarServidoresOnline)
         self.timer.start(5000)  # Comprobar cada 5 segundos
 
-        def on_whitelist_toggled(checked):
+        def showWhiteList(checked):
             if checked:
                 self.reloadWhiteList()
                 print("Reload checked")
 
             self.main_window.widgetWhiteList.setVisible(checked)
-        self.main_window.Whitelist.toggled.connect(on_whitelist_toggled)
+        self.main_window.Whitelist.toggled.connect(showWhiteList)
 
         #Abrir dialogo de crear servidor
         self.main_window.createServerBtn.clicked.connect(self.spawnDialog)
@@ -588,6 +588,8 @@ class Window(QMainWindow):
             versionCombo.addItems(mc_server_utils.obtener_versiones_minecraft())
         elif tipo == "Forge":
             versionCombo.addItems(mc_server_utils.getMinecraftVersionFromForge())
+        elif tipo == "Fabric":
+            versionCombo.addItems(mc_server_utils.getAllFabricVersions())
     def writeProperties(self, ruta, text):
         server_properties_path = os.path.join(ruta, "server.properties")
         # Si no existe, crea el fichero y escribe la línea
@@ -663,6 +665,15 @@ class Window(QMainWindow):
             self.setup_minecraft_server_neoforge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
             
         self.reloadServers()
+
+    def setup_minecraft_server_fabric(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
+
+        jarName = f"{jars_path}/fabric_{version}_server.jar"
+        if not os.path.exists(jarName):
+            mc_server_utils.downloadJARFabric(version, jarName)
+            print(jarName + " Descargado")
+        dialog.accept()
+
 
     def setup_minecraft_server_forge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
 

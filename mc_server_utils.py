@@ -98,6 +98,26 @@ def getMinecraftVersionFromForge():
         listGameVersions.sort(key=lambda x: tuple(map(int, x.split('.'))))
         listGameVersions.reverse()  # Ordenar de mayor a menor
         return listGameVersions
+    
+def getAllFabricVersions():
+    url = "https://meta.fabricmc.net/v2/versions/game/"
+    
+    data = requests.get(url)
+    stableVersions = [version["version"] for version in data.json() if version["stable"]]
+    return stableVersions
+
+def downloadJARFabric(version, ruta_destino):
+    loaderURL = "https://meta.fabricmc.net/v2/versions/loader/"
+    dataLoader = requests.get(loaderURL)
+    versionLoader = [v["version"] for v in dataLoader.json() if v["stable"]][0]
+
+    installerURL = "https://meta.fabricmc.net/v2/versions/installer/"
+    dataInstaller = requests.get(installerURL)
+    versionInstaller = [v["version"] for v in dataInstaller.json() if v["stable"]][0]
+
+    url = f"https://meta.fabricmc.net/v2/versions/loader/{version}/{versionLoader}/{versionInstaller}/server/jar"
+    download_file(ruta_destino, url)
+
 def getAllForgeVersions():
     url = "https://api.curseforge.com/v1/minecraft/modloader"
 
@@ -187,15 +207,14 @@ def descargarMod(mod_id, ruta_destino):
 def getOnlineServers():
     
     listaServer = []
-    print("🔍 Buscando servidores de Minecraft...\n")
-
+    # Iterar sobre todos los procesos del sistema
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
             # Solo procesos que usan Java
             if "java" in proc.info['name'].lower():
                 cmdline = " ".join(proc.info['cmdline'])
                 
-                if any(keyword in cmdline for keyword in ["vanilla", "forge", "fabric", "paper", "spigot"]):
+                if any(keyword in cmdline for keyword in ["vanilla", "forge", "fabric", "neoforge"]):
                     
                     path = cmdline.replace("\\", "/")
                     path = path.split("servers")[1]
