@@ -138,44 +138,58 @@ def download_file(ruta_destino, url):
         print("✅ Descargado correctamente:", ruta_destino)
     else:
         print("❌ Error al descargar:", response.status_code)
-        
-def obtener_todos_mods(tipo,version):
-        """
-        Descarga todos los mods de un tipo y versión usando la API de Modrinth.
-        Esta función es un wrapper síncrono para la función asíncrona interna.
-        """
 
-        async def obtener_todos_mods_async(tipo, version, stop=99999999999999, limit=100):
-            todos_mods = []
-            offset = 0
 
-            async with aiohttp.ClientSession() as session:
-                while True:
-                    params = {
-                        "limit": limit,
-                        "offset": offset,
-                        "facets": json.dumps([
-                            ["project_types:mod"],
-                            [f"categories:{tipo}"],
-                            [f"versions:{version}"],
-                            ["server_side:optional", "server_side:required"]
-                        ])
-                    }
-                    async with session.get("https://api.modrinth.com/v2/search", params=params) as response:
-                        data = await response.json()
-                        hits = data.get("hits", [])
-                        if not hits:
-                            break
-                        todos_mods.extend(hits)
-                        if stop <= len(todos_mods):
-                            break
-                        offset += limit
-                        
 
-            return todos_mods
+def obtener_todos_mods(tipo, version, offset=0, stop=99999999999999, limit=100, filtro=None):
+    """
+    Descarga todos los mods de un tipo y versión usando la API de Modrinth.
+    Si se pasa `filtro`, solo devuelve mods cuyo nombre comience con ese filtro.
+    """
 
-        # Ejecutar la función asíncrona y devolver el resultado
-        return asyncio.run(obtener_todos_mods_async(tipo, version))
+    async def obtener_todos_mods_async(tipo, version, offset=0, stop=99999999999999, limit=100, filtro=None):
+        todos_mods = []
+
+        async with aiohttp.ClientSession() as session:
+            while True:
+                params = {
+                    "limit": limit,
+                    "offset": offset,
+                    "facets": json.dumps([
+                        ["project_types:mod"],
+                        [f"categories:{tipo}"],
+                        [f"versions:{version}"],
+                        ["server_side:optional", "server_side:required"]
+                    ]),
+                }
+
+                # Si hay filtro, lo mandamos como `query`
+                if filtro:
+                    params["query"] = filtro  
+
+                async with session.get("https://api.modrinth.com/v2/search", params=params) as response:
+                    data = await response.json()
+                    hits = data.get("hits", [])
+                    if not hits:
+                        break
+
+                    # Aquí aplicamos el "empieza con"
+                    if filtro:
+                        hits = [
+                            mod for mod in hits
+                            if mod["title"].lower().startswith(filtro.lower())
+                        ]
+
+                    todos_mods.extend(hits)
+
+                    if len(todos_mods) >= stop:
+                        break
+                    offset += limit
+
+        return todos_mods
+
+    return asyncio.run(obtener_todos_mods_async(tipo, version, offset, stop, limit, filtro))
+
 
 def descargarMod(mod_id, ruta_destino):
     

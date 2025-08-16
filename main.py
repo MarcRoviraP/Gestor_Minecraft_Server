@@ -29,6 +29,7 @@ class Window(QMainWindow):
     def __init__(self, cache, parent=None):
         super().__init__(parent)
         self.cache = cache
+        self.offsetMods = 0
         self.listaServidoresOnline = []
         self.listaServidoresOnline = mc_server_utils.getOnlineServers()
         self.lastServer = ""
@@ -419,54 +420,75 @@ class Window(QMainWindow):
         self.main_window.editBuscarMods.textChanged.connect(partial(self.search_timer.start, 200))  # Iniciar el timer con un delay de 200 ms
         self.showMods(server, tipo, version)
 
-    def showMods(self, server, tipo, version):
+    def scrollModsList(self, value, server, tipo, version):
+        maximum = self.main_window.modsListWidget.verticalScrollBar().maximum()
+        if value >= maximum - 10:
+            print(maximum)
+            self.offsetMods += 100
+            self.showMods(server, tipo, version, append=True)
+
+    def showMods(self, server, tipo, version, append=False):
         filtro = self.main_window.editBuscarMods.text().strip()
-        self.main_window.modsListWidget.clear()
-        mods = mc_server_utils.obtener_todos_mods(tipo, version)
+        self.main_window.modsListWidget.verticalScrollBar().valueChanged.connect(
+            partial(self.scrollModsList, server=server, tipo=tipo, version=version)
+        )
+        # Solo limpiar si es la primera carga
+        if not append:
+            self.main_window.modsListWidget.clear()
+            self.offsetMods = 0
+
+        mods = mc_server_utils.obtener_todos_mods(
+            tipo,
+            version,
+            offset=self.offsetMods,
+            stop=200,
+            limit=100,
+            filtro=filtro
+        )
+
         if not mods:
-            self.showWarningDialog("No se encontraron mods para este servidor.", "No hay mods")
+            if not append:  # Solo mostrar aviso si es la primera carga
+                self.showWarningDialog("No se encontraron mods para este servidor.", "No hay mods")
             return
-    
+
         self.thread_pool = getattr(self, 'thread_pool', QThreadPool())
         self.icon_signals = IconResult()
-        self.icon_signals.finished.connect(self.icon_ready)  # Conectar señal a la UI
-    
-        self.icon_labels = {}
-    
+        self.icon_signals.finished.connect(self.icon_ready)
+        self.icon_labels = getattr(self, 'icon_labels', {})
+
         for mod in mods:
             name_label = QLabel(mod['title'])
-            if filtro and not name_label.text().lower().startswith(filtro.lower()):
-                continue
-            
+       
+
             widget = QWidget()
             layout = QHBoxLayout(widget)
             layout.setContentsMargins(5, 5, 5, 5)
-    
+
             icon_label = QLabel()
             icon_label.setFixedSize(32, 32)
             self.icon_labels[mod['slug']] = icon_label
-    
+
             version_label = QLabel(f"Versión: {mod['latest_version']}")
             name_label.setStyleSheet("font-weight: bold")
             info_layout = QVBoxLayout()
             info_layout.addWidget(name_label)
             info_layout.addWidget(version_label)
-    
+
             download_button = QPushButton("Descargar")
             download_button.clicked.connect(
                 partial(self.descargar_mod, mod['slug'], mod['latest_version'], server)
             )
-    
+
             layout.addWidget(icon_label)
             layout.addLayout(info_layout)
             layout.addStretch()
             layout.addWidget(download_button)
-    
+
             item = QListWidgetItem()
             item.setSizeHint(widget.sizeHint())
             self.main_window.modsListWidget.addItem(item)
             self.main_window.modsListWidget.setItemWidget(item, widget)
-    
+
             url = mod.get('icon_url', '')
             if url:
                 downloader = IconDownloader(url, self.cache, icon_label, self.icon_signals)
