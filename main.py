@@ -252,6 +252,9 @@ class Window(QMainWindow):
         with open(white_list_path, 'r') as f:
             white_list = json.load(f)
         self.thread_pool_users = getattr(self, 'thread_pool_users', QThreadPool())
+        
+        self.avatar_signals = IconResult()
+        self.avatar_signals.finished.connect(self.icon_ready)
         icon_labels = {}  # para mapear widgets y actualizarlos luego
         for entry in white_list:
             nameTag = entry.get('name', 'Unknown')
@@ -281,7 +284,7 @@ class Window(QMainWindow):
             avatar_url = f"https://minotar.net/avatar/{nameTag}/32"
             
             if avatar_url:
-                downloader = IconDownloader(avatar_url, self.cache, self.icon_ready, iconLabel)
+                downloader = IconDownloader(avatar_url, self.cache, iconLabel,self.avatar_signals)
                 self.thread_pool_users.start(downloader)
             
             
@@ -508,14 +511,18 @@ class Window(QMainWindow):
 
         print(f"Descargando mod {slug} versión {version} a {destino}")
     def icon_ready(self, url, img_data, widget):
+        print(f"Icono listo para {url}")
         try:
             if img_data:
                 pixmap = QPixmap()
                 pixmap.loadFromData(img_data)
                 widget.setPixmap(pixmap.scaled(32, 32))
+                print(f"Icono descargado y asignado para {url}")
             else:
                 widget.setText("❌")
-        except Exception:
+                print(f"[IconDownloader] Error: No se pudo descargar el icono de {url}")
+        except Exception as e:
+            print(f"[IconDownloader] Error: {e}")
             pass
         
     def handle_item_click(self, item):
@@ -620,6 +627,9 @@ class Window(QMainWindow):
             versionCombo.addItems(mc_server_utils.getMinecraftVersionFromForge())
         elif tipo == "Fabric":
             versionCombo.addItems(mc_server_utils.getAllFabricVersions())
+        elif tipo == "NeoForge":
+            versionCombo.addItems(mc_server_utils.getAllNeoforgeVersions())
+    
     def writeProperties(self, ruta, text):
         server_properties_path = os.path.join(ruta, "server.properties")
         # Si no existe, crea el fichero y escribe la línea
