@@ -412,7 +412,8 @@ class Window(QMainWindow):
         self.main_window.listServers.itemClicked.connect(self.handle_item_click)
        
     def enterModsContext(self, server, tipo, version):
-        
+
+        print("Entrando al contexto de mods...")
         self.main_window.modWidget.setVisible(True)
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.search_timer.timeout.connect(partial(self.showMods, server, tipo, version))
@@ -420,31 +421,38 @@ class Window(QMainWindow):
         self.main_window.editBuscarMods.textChanged.connect(partial(self.search_timer.start, 200))  # Iniciar el timer con un delay de 200 ms
         self.showMods(server, tipo, version)
 
+        self.main_window.modsListWidget.verticalScrollBar().valueChanged.connect(
+            partial(self.scrollModsList, server=server, tipo=tipo, version=version)
+        )
     def scrollModsList(self, value, server, tipo, version):
         maximum = self.main_window.modsListWidget.verticalScrollBar().maximum()
-        if value >= maximum - 10:
-            print(maximum)
+        if maximum == 0:
+            return
+        if value >= maximum and not self.tope:
+            print(f"Scroll bar alcanzó el máximo: {maximum}")
             self.offsetMods += 100
             self.showMods(server, tipo, version, append=True)
 
     def showMods(self, server, tipo, version, append=False):
+        print("Mostrando mods...")
         filtro = self.main_window.editBuscarMods.text().strip()
-        self.main_window.modsListWidget.verticalScrollBar().valueChanged.connect(
-            partial(self.scrollModsList, server=server, tipo=tipo, version=version)
-        )
         # Solo limpiar si es la primera carga
         if not append:
+            self.tope = False
             self.main_window.modsListWidget.clear()
             self.offsetMods = 0
 
+        stop = 100
         mods = mc_server_utils.obtener_todos_mods(
             tipo,
             version,
             offset=self.offsetMods,
-            stop=200,
+            stop=stop,
             limit=100,
             filtro=filtro
         )
+
+        self.tope = len(mods) < stop
 
         if not mods:
             if not append:  # Solo mostrar aviso si es la primera carga

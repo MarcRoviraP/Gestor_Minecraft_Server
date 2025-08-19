@@ -1,8 +1,9 @@
 # --- 2. IconDownloader que trabaja solo con bytes ---
 import requests, weakref, os
-from PyQt6.QtCore import QRunnable, QObject, pyqtSignal, QThreadPool
+from PyQt6.QtCore import QRunnable, QObject, pyqtSignal, QSemaphore
 
 
+icon_semaphore = QSemaphore(5)
 class IconDownloader(QRunnable):
     def __init__(self, url, cache, widget, signal_obj):
         super().__init__()
@@ -19,6 +20,8 @@ class IconDownloader(QRunnable):
             self._emit(img_data)
             return
 
+        # 
+        icon_semaphore.acquire()
         try:
             r = requests.get(self.url, timeout=10)
             if r.ok:
@@ -31,6 +34,8 @@ class IconDownloader(QRunnable):
         except Exception as e:
             print(f"[IconDownloader] Error: {e}")
             self._emit(None)
+        finally:
+            icon_semaphore.release()
 
     def _emit(self, img_data):
         widget = self.widget_ref()
