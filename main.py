@@ -372,6 +372,10 @@ class Window(QMainWindow):
                     self._reload_timer.timeout.connect(self.reloadServers)
                     self._reload_timer.start(10000)
             else:
+                
+                # Botón cerrar servidor
+                stop_server_button = QPushButton("STOP")
+                stop_server_button.clicked.connect(partial(self.stopServer, server))
                 # Botón iniciar servidor
                 start_server_button = QPushButton("START")
                 # Obtener el valor correcto de 'version' para pasar a startServer
@@ -411,7 +415,11 @@ class Window(QMainWindow):
             layout.addWidget(folder_button)
             if tipo.lower() != "vanilla":
                 layout.addWidget(mods_button)
-            layout.addWidget(start_server_button)
+            
+            btnsLayout = QVBoxLayout()
+            btnsLayout.addWidget(stop_server_button)
+            btnsLayout.addWidget(start_server_button)
+            layout.addLayout(btnsLayout)
 
             # Finalizar item en QListWidget
             item = QListWidgetItem()
@@ -422,6 +430,8 @@ class Window(QMainWindow):
 
         self.main_window.listServers.itemClicked.connect(self.handle_item_click)
        
+    def stopServer(self, server):
+        mc_server_utils.stopServer(server)
     def enterModsContext(self, server, tipo, version):
 
         print("Entrando al contexto de mods...")

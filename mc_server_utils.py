@@ -280,4 +280,25 @@ def getOnlineServers():
         except Exception as e:
             print("Error al acceder al proceso:", e)
     return listaServer
-    
+
+def stopServer(server):
+
+    # Iterar sobre todos los procesos del sistema
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            # Solo procesos que usan Java
+            if "java" in proc.info['name'].lower():
+                cmdline = " ".join(proc.info['cmdline'])
+                
+                if any(keyword in cmdline for keyword in ["vanilla", "forge", "fabric", "neoforge"]):
+                    
+                    path = cmdline.replace("\\", "/")
+                    path = path.split("servers")[1]
+                    nombre = path.split("/")[1]
+                    if nombre == server:
+                        proc.terminate()
+                    return
+
+        except Exception as e:
+            print("Error al acceder al proceso:", e)
+    return
