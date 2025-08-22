@@ -374,7 +374,15 @@ class Window(QMainWindow):
             else:
                 # Botón iniciar servidor
                 start_server_button = QPushButton("START")
-                start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar))
+                # Obtener el valor correcto de 'version' para pasar a startServer
+                split_version = version.split()
+                print(f"Version split: {split_version}")
+                if len(split_version) > 1:
+                    version = split_version[0]
+                    version_param = split_version[2]
+                else:
+                    version_param = version
+                start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar, tipo, version_param))
 
             # Botón carpeta
             folder_button = QPushButton(QIcon("minecraft/ico/folder.png"), "")
@@ -706,6 +714,30 @@ class Window(QMainWindow):
             
         self.reloadServers()
 
+    def setup_minecraft_server_neoforge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
+
+        versionNeoForge = version.split()[2]
+        jarName = f"{jars_path}/neoforge_{versionNeoForge}_server.jar"
+        if not os.path.exists(jarName):
+            mc_server_utils.downloadJARNeoforge(versionNeoForge, jarName)
+            
+        os.makedirs(os.path.join(server_path, nombre), exist_ok=True)
+        
+        command = [
+            "java",
+            "-jar",
+            jarName,
+            "--installServer"
+            ]
+
+        subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
+
+        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
+        serverJAR = f"{server_path}/{nombre}/{versionNeoForge}.jar"
+        shutil.copy(os.path.join(server_path, nombre,"libraries","net","neoforged","neoforge", versionNeoForge,f"neoforge-{versionNeoForge}-server.jar"), serverJAR)
+        self.startServer(nombre, ram_min, ram_max, serverJAR, tipo,versionNeoForge)
+        dialog.accept()
+
     def setup_minecraft_server_fabric(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
 
         jarName = f"{jars_path}/fabric_{version}_server.jar"
@@ -724,7 +756,7 @@ class Window(QMainWindow):
 
         subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
         self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
-        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/.fabric/server/{version}-server.jar")
+        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/.fabric/server/{version}-server.jar", tipo,version)
 
         dialog.accept()
 
@@ -752,7 +784,7 @@ class Window(QMainWindow):
 
         self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
 
-        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/forge-{mcVersion}-{forgeVersion}-shim.jar")
+        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/forge-{mcVersion}-{forgeVersion}-shim.jar", tipo,version)
         dialog.accept()
 
          
@@ -771,7 +803,7 @@ class Window(QMainWindow):
         rutaJarFinal = os.path.join(server_path, nombre, "server_vanilla.jar")
         shutil.copy(rutaJarInicial, rutaJarFinal)
         # Lanzamos el servidor
-        self.startServer(nombre, ram_min, ram_max, rutaJarFinal)
+        self.startServer(nombre, ram_min, ram_max, rutaJarFinal, tipo, version)
 
         print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB.")
         # Recargar la lista de servidores
@@ -796,36 +828,44 @@ class Window(QMainWindow):
 
         shutil.copy("minecraft/ico/server-icon.png", f"{server_path}/{nombre}/")
 
-    def startServer(self, nombre, ram_min, ram_max, rutaJar):
-        jar_command = ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", rutaJar, "nogui"]
+    def startServer(self, nombre, ram_min, ram_max, rutaJar,tipo,version):
+        if tipo.lower() != "neoforge":
+            jar_command = ["java", f"-Xms{ram_min}M", f"-Xmx{ram_max}M", "-jar", rutaJar, "nogui"]
+        else:
+                # Ajustar RAM en user_jvm_args.txt
+            jvm_args_file = os.path.join(server_path, nombre, "user_jvm_args.txt")
+            with open(jvm_args_file, "w", encoding="utf-8") as f:
+                f.write(f"-Xms{ram_min}M\n")
+                f.write(f"-Xmx{ram_max}M\n")
+            jar_command = ["java", "@user_jvm_args.txt", f"@libraries/net/neoforged/neoforge/{version}/win_args.txt", "nogui"]
+
         jar_command_str = " ".join(jar_command)
         cwd = os.path.join(server_path, nombre)
         operating_system = platform.system().lower()
-    
-        if operating_system == 'windows':
-            subprocess.Popen(jar_command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        try:
+            print("Iniciando servidor con comando:", jar_command_str)
+            if operating_system == 'windows':
+                subprocess.Popen(jar_command, cwd=cwd, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-    
-        elif operating_system == 'linux':
-            if shutil.which('ptyxis'):
-                subprocess.Popen(['ptyxis', '--', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}'])
-            elif shutil.which('gnome-terminal'):
-                subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
-            elif shutil.which('konsole'):
-                subprocess.Popen(['konsole', '-e', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
-            elif shutil.which('xterm'):
-                subprocess.Popen(['xterm', '-e', f'cd "{cwd}" && {jar_command_str}; bash'])
+
+            elif operating_system == 'linux':
+                if shutil.which('ptyxis'):
+                    subprocess.Popen(['ptyxis', '--', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}'])
+                elif shutil.which('gnome-terminal'):
+                    subprocess.Popen(['gnome-terminal', '--', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
+                elif shutil.which('konsole'):
+                    subprocess.Popen(['konsole', '-e', 'bash', '-c', f'cd "{cwd}" && {jar_command_str}; exec bash'])
+                elif shutil.which('xterm'):
+                    subprocess.Popen(['xterm', '-e', f'cd "{cwd}" && {jar_command_str}; bash'])
+                else:
+                    # Fallback: ejecuta en segundo plano sin TTY
+                    subprocess.Popen(jar_command, cwd=cwd, start_new_session=True)
+
             else:
-                # Fallback: ejecuta en segundo plano sin TTY
-                subprocess.Popen(jar_command, cwd=cwd, start_new_session=True)
-    
-        else:
-            print("OS not supported")
+                print("OS not supported")
 
-    
-
-
-
+        except Exception as e:
+            print("Error al iniciar el servidor:", e)
 
 if __name__ == "__main__":
     # Create the application

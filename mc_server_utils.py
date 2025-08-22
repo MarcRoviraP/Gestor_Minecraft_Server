@@ -134,6 +134,11 @@ def getAllNeoforgeVersions():
     last_versions.pop()
     return last_versions
 
+def downloadJARNeoforge(version, ruta_destino):
+    #https://maven.neoforged.net/releases/net/neoforged/neoforge/21.8.34/neoforge-21.8.34-installer.jar
+    url = f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{version}/neoforge-{version}-installer.jar"
+    download_file(ruta_destino, url)
+
 def getAllFabricVersions():
     url = "https://meta.fabricmc.net/v2/versions/game/"
     
