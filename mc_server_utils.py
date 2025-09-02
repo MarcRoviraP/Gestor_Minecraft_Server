@@ -231,10 +231,10 @@ def obtener_todos_mods(tipo, version, offset=0, stop=99999999999999, limit=100, 
     return asyncio.run(obtener_todos_mods_async(tipo, version, offset, stop, limit, filtro))
 
 
-def descargarMod(mod_id, ruta_destino):
+def descargarMod(mod_id, ruta_destino,mod_name):
     
     
-    def descargarModAsync(mod_id, ruta_destino):
+    def descargarModAsync(mod_id, ruta_destino,mod_name):
         
     
         url = f"https://api.modrinth.com/v2/version/{mod_id}"
@@ -245,8 +245,9 @@ def descargarMod(mod_id, ruta_destino):
             if data:
                 files = data.get("files", [])
                 download_url = files[0].get("url") 
-                mod_name = files[0].get("filename")
-                mod_path = os.path.join(ruta_destino, f"{mod_name}")
+                print("Mod ID:", mod_id)
+                
+                mod_path = os.path.join(ruta_destino, f"{mod_name.replace(' ','_')}.jar")
 
                 download_file(mod_path, download_url)
                 return mod_path
@@ -255,7 +256,7 @@ def descargarMod(mod_id, ruta_destino):
         else:
             print("Error al obtener el mod:", response.status_code)
         return None
-    hilo = threading.Thread(target=descargarModAsync, args=(mod_id, ruta_destino))
+    hilo = threading.Thread(target=descargarModAsync, args=(mod_id, ruta_destino,mod_name))
     hilo.start()
 
 def getOnlineServers():

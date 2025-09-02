@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1236</width>
-    <height>661</height>
+    <width>1434</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>MCS Manager</string>
   </property>
   <property name="styleSheet">
    <string notr="true">/* =============== COLORES BASE =============== */
@@ -138,6 +138,15 @@ QScrollBar::add-line, QScrollBar::sub-line {
     height: 0px;
     width: 0px;
 }
+/* =============== TOOLTIP ===================== */
+QToolTip {
+    background-color: #2c2c2c;
+    color: #ffffff;
+    border: 1px solid #00bcd4;
+    border-radius: 6px;
+    padding: 6px;
+    font-size: 13px;
+}
 </string>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -146,7 +155,7 @@ QScrollBar::add-line, QScrollBar::sub-line {
      <rect>
       <x>30</x>
       <y>40</y>
-      <width>451</width>
+      <width>461</width>
       <height>571</height>
      </rect>
     </property>
@@ -154,9 +163,9 @@ QScrollBar::add-line, QScrollBar::sub-line {
    <widget class="QPushButton" name="createServerBtn">
     <property name="geometry">
      <rect>
-      <x>1070</x>
-      <y>540</y>
-      <width>121</width>
+      <x>20</x>
+      <y>640</y>
+      <width>461</width>
       <height>61</height>
      </rect>
     </property>
@@ -167,7 +176,7 @@ QScrollBar::add-line, QScrollBar::sub-line {
    <widget class="QWidget" name="configurePropertiesWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>490</x>
+      <x>510</x>
       <y>40</y>
       <width>691</width>
       <height>471</height>
@@ -478,48 +487,55 @@ QScrollBar::add-line, QScrollBar::sub-line {
    <widget class="QWidget" name="modWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>560</x>
+      <x>510</x>
       <y>20</y>
-      <width>511</width>
-      <height>671</height>
+      <width>881</width>
+      <height>611</height>
      </rect>
     </property>
     <widget class="QWidget" name="">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>30</y>
-       <width>491</width>
-       <height>561</height>
+       <y>20</y>
+       <width>871</width>
+       <height>571</height>
       </rect>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_6">
+     <layout class="QHBoxLayout" name="horizontalLayout_8">
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_7">
-        <property name="leftMargin">
-         <number>230</number>
-        </property>
+       <widget class="QListWidget" name="instaledModsList"/>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
-         <widget class="QLineEdit" name="editBuscarMods">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <property name="leftMargin">
+           <number>230</number>
+          </property>
+          <item>
+           <widget class="QLineEdit" name="editBuscarMods">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QListWidget" name="modsListWidget">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="selectionRectVisible">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
        </layout>
-      </item>
-      <item>
-       <widget class="QListWidget" name="modsListWidget">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="selectionRectVisible">
-         <bool>false</bool>
-        </property>
-       </widget>
       </item>
      </layout>
     </widget>
@@ -530,7 +546,7 @@ QScrollBar::add-line, QScrollBar::sub-line {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1236</width>
+     <width>1434</width>
      <height>24</height>
     </rect>
    </property>

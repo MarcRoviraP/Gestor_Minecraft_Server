@@ -274,6 +274,7 @@ class Window(QMainWindow):
             layout = QHBoxLayout()
             layout.addWidget(iconLabel)
             layout.addWidget(QLabel(nameTag))
+            layout.addStretch()
             layout.addWidget(borrarButton)
             layout.addStretch()
             widget.setLayout(layout)
@@ -316,6 +317,7 @@ class Window(QMainWindow):
         servidores = os.listdir(server_path)
 
         for server in servidores:
+            online = server in self.listaServidoresOnline
             uri_server = os.path.join(server_path, server)
             widget = QWidget()
             layout = QHBoxLayout(widget)
@@ -323,10 +325,10 @@ class Window(QMainWindow):
             layout.setSpacing(15)
 
             # Si el servidor está en línea
-            if server in self.listaServidoresOnline:
+            if online:
                 widget.setStyleSheet("""
                     QWidget {
-                        background-color: #1f3b4d;       /* Azul petróleo oscuro */
+                        background-color: #1f3b4d;
                         margin-bottom: 3px;
                     }
                 """)
@@ -373,20 +375,22 @@ class Window(QMainWindow):
                     self._reload_timer.start(10000)
             else:
                 
-                # Botón cerrar servidor
-                stop_server_button = QPushButton("STOP")
-                stop_server_button.clicked.connect(partial(self.stopServer, server))
-                # Botón iniciar servidor
-                start_server_button = QPushButton("START")
-                # Obtener el valor correcto de 'version' para pasar a startServer
-                split_version = version.split()
-                print(f"Version split: {split_version}")
-                if len(split_version) > 1:
-                    version = split_version[0]
-                    version_param = split_version[2]
+                if online:
+                    # Botón cerrar servidor
+                    stop_server_button = QPushButton("STOP")
+                    stop_server_button.clicked.connect(partial(self.stopServer, server))
                 else:
-                    version_param = version
-                start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar, tipo, version_param))
+                    # Botón iniciar servidor
+                    start_server_button = QPushButton("START")
+                    # Obtener el valor correcto de 'version' para pasar a startServer
+                    split_version = version.split()
+                    print(f"Version split: {split_version}")
+                    if len(split_version) > 1:
+                        version = split_version[0]
+                        version_param = split_version[2]
+                    else:
+                        version_param = version
+                    start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar, tipo, version_param))
 
             # Botón carpeta
             folder_button = QPushButton(QIcon("minecraft/ico/folder.png"), "")
@@ -417,9 +421,10 @@ class Window(QMainWindow):
                 layout.addWidget(mods_button)
             
             btnsLayout = QVBoxLayout()
-            btnsLayout.addWidget(stop_server_button)
-            btnsLayout.addWidget(start_server_button)
-            layout.addLayout(btnsLayout)
+            if online:
+                layout.addWidget(stop_server_button)
+            else:
+                layout.addWidget(start_server_button)
 
             # Finalizar item en QListWidget
             item = QListWidgetItem()
@@ -435,12 +440,20 @@ class Window(QMainWindow):
     def enterModsContext(self, server, tipo, version):
 
         print("Entrando al contexto de mods...")
+        
+        # Obtener mods instalados
+        self.modsInstalados = os.listdir(os.path.join(server_path, server, "mods")) if os.path.exists(os.path.join(server_path, server, "mods")) else []
+        self.modsInstalados = [mod.replace("_", " ").replace(".jar", "") for mod in self.modsInstalados]
+        print(f"Mods instalados en {server}: {self.modsInstalados}")
+        
         self.main_window.modWidget.setVisible(True)
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.search_timer.timeout.connect(partial(self.showMods, server, tipo, version))
 
         self.main_window.editBuscarMods.textChanged.connect(partial(self.search_timer.start, 200))  # Iniciar el timer con un delay de 200 ms
         self.showMods(server, tipo, version)
+        self.showInstalledMods(server)
+
 
         self.main_window.modsListWidget.verticalScrollBar().valueChanged.connect(
             partial(self.scrollModsList, server=server, tipo=tipo, version=version)
@@ -454,8 +467,40 @@ class Window(QMainWindow):
             self.offsetMods += 100
             self.showMods(server, tipo, version, append=True)
 
+    def showInstalledMods(self, server):
+        print("Mostrando mods instalados...")
+        self.main_window.instaledModsList.clear()
+        for mod in self.modsInstalados:
+            widget = QWidget()
+            layout = QHBoxLayout(widget)
+            layout.setContentsMargins(5, 5, 5, 5)
+
+            name_label = QLabel(mod)
+
+            delete_button = QPushButton("❌")
+            delete_button.setToolTip("Desinstalar mod")
+            delete_button.clicked.connect(
+                partial(self.uninstall_mod, mod, server)
+            )
+            layout.addWidget(name_label)
+            layout.addStretch()
+            layout.addWidget(delete_button)
+
+            item = QListWidgetItem()
+            item.setSizeHint(widget.sizeHint())
+            self.main_window.instaledModsList.addItem(item)
+            self.main_window.instaledModsList.setItemWidget(item, widget)
+
+    def uninstall_mod(self, mod, server):
+        print(f"Desinstalando mod: {mod}")
+        os.remove(os.path.join(server_path, server, "mods", mod.replace(" ", "_") + ".jar"))
+        
+        self.modsInstalados.remove(mod)
+        self.showInstalledMods(server)
+        
     def showMods(self, server, tipo, version, append=False):
         print("Mostrando mods...")
+        print("Versión:", version)
         filtro = self.main_window.editBuscarMods.text().strip()
         # Solo limpiar si es la primera carga
         if not append:
@@ -497,16 +542,21 @@ class Window(QMainWindow):
             icon_label.setFixedSize(32, 32)
             self.icon_labels[mod['slug']] = icon_label
 
-            version_label = QLabel(f"Versión: {mod['latest_version']}")
+            version_label = QLabel(f"Versión: {version}")
             name_label.setStyleSheet("font-weight: bold")
             info_layout = QVBoxLayout()
             info_layout.addWidget(name_label)
             info_layout.addWidget(version_label)
 
-            download_button = QPushButton("Descargar")
-            download_button.clicked.connect(
-                partial(self.descargar_mod, mod['slug'], mod['latest_version'], server)
-            )
+            title = mod['title']
+            download_button = QPushButton()
+            if title in self.modsInstalados:
+                download_button.setText("✔ Instalado")
+            else:
+                download_button.setText("⬇ Descargar")
+                download_button.clicked.connect(
+                    partial(self.descargar_mod, title, mod['latest_version'], server, download_button)
+                )
 
             layout.addWidget(icon_label)
             layout.addLayout(info_layout)
@@ -523,19 +573,23 @@ class Window(QMainWindow):
                 downloader = IconDownloader(url, self.cache, icon_label, self.icon_signals)
                 self.thread_pool.start(downloader)
 
-    def descargar_mod(self, slug, version,server):
-        destino = os.path.join(server_path,server, "mods")
-        mc_server_utils.descargarMod(version, destino)
+    def descargar_mod(self, title, version, server, download_button):
+        destino = os.path.join(server_path, server, "mods")
+        mc_server_utils.descargarMod(version, destino, title)
+        download_button.setText("✔ Instalado")
+        download_button.clicked.disconnect()
+        self.modsInstalados.append(title)
+        self.showInstalledMods(server)
 
-        print(f"Descargando mod {slug} versión {version} a {destino}")
+        print(f"Descargando mod {title} versión {version} a {destino}")
     def icon_ready(self, url, img_data, widget):
-        print(f"Icono listo para {url}")
+        #print(f"Icono listo para {url}")
         try:
             if img_data:
                 pixmap = QPixmap()
                 pixmap.loadFromData(img_data)
                 widget.setPixmap(pixmap.scaled(32, 32))
-                print(f"Icono descargado y asignado para {url}")
+                #print(f"Icono descargado y asignado para {url}")
             else:
                 widget.setText("❌")
                 print(f"[IconDownloader] Error: No se pudo descargar el icono de {url}")

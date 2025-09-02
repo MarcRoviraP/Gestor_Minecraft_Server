@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1236, 661)
+        MainWindow.resize(1434, 800)
         MainWindow.setStyleSheet("/* =============== COLORES BASE =============== */\n"
 "* {\n"
 "    color: #ffffff;\n"
@@ -137,17 +137,26 @@ class Ui_MainWindow(object):
 "    height: 0px;\n"
 "    width: 0px;\n"
 "}\n"
+"/* =============== TOOLTIP ===================== */\n"
+"QToolTip {\n"
+"    background-color: #2c2c2c;\n"
+"    color: #ffffff;\n"
+"    border: 1px solid #00bcd4;\n"
+"    border-radius: 6px;\n"
+"    padding: 6px;\n"
+"    font-size: 13px;\n"
+"}\n"
 "")
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.listServers = QtWidgets.QListWidget(parent=self.centralwidget)
-        self.listServers.setGeometry(QtCore.QRect(30, 40, 451, 571))
+        self.listServers.setGeometry(QtCore.QRect(30, 40, 461, 571))
         self.listServers.setObjectName("listServers")
         self.createServerBtn = QtWidgets.QPushButton(parent=self.centralwidget)
-        self.createServerBtn.setGeometry(QtCore.QRect(1070, 540, 121, 61))
+        self.createServerBtn.setGeometry(QtCore.QRect(20, 640, 461, 61))
         self.createServerBtn.setObjectName("createServerBtn")
         self.configurePropertiesWidget = QtWidgets.QWidget(parent=self.centralwidget)
-        self.configurePropertiesWidget.setGeometry(QtCore.QRect(490, 40, 691, 471))
+        self.configurePropertiesWidget.setGeometry(QtCore.QRect(510, 40, 691, 471))
         self.configurePropertiesWidget.setObjectName("configurePropertiesWidget")
         self.widgetWhiteList = QtWidgets.QWidget(parent=self.configurePropertiesWidget)
         self.widgetWhiteList.setGeometry(QtCore.QRect(350, 20, 351, 361))
@@ -295,13 +304,18 @@ class Ui_MainWindow(object):
         self.saveProperties.setObjectName("saveProperties")
         self.verticalLayout_5.addWidget(self.saveProperties)
         self.modWidget = QtWidgets.QWidget(parent=self.centralwidget)
-        self.modWidget.setGeometry(QtCore.QRect(560, 20, 511, 671))
+        self.modWidget.setGeometry(QtCore.QRect(510, 20, 881, 611))
         self.modWidget.setObjectName("modWidget")
         self.widget = QtWidgets.QWidget(parent=self.modWidget)
-        self.widget.setGeometry(QtCore.QRect(10, 30, 491, 561))
+        self.widget.setGeometry(QtCore.QRect(10, 20, 871, 571))
         self.widget.setObjectName("widget")
-        self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.widget)
-        self.verticalLayout_6.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_8 = QtWidgets.QHBoxLayout(self.widget)
+        self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_8.setObjectName("horizontalLayout_8")
+        self.instaledModsList = QtWidgets.QListWidget(parent=self.widget)
+        self.instaledModsList.setObjectName("instaledModsList")
+        self.horizontalLayout_8.addWidget(self.instaledModsList)
+        self.verticalLayout_6 = QtWidgets.QVBoxLayout()
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_7.setContentsMargins(230, -1, -1, -1)
@@ -320,9 +334,10 @@ class Ui_MainWindow(object):
         self.modsListWidget.setSelectionRectVisible(False)
         self.modsListWidget.setObjectName("modsListWidget")
         self.verticalLayout_6.addWidget(self.modsListWidget)
+        self.horizontalLayout_8.addLayout(self.verticalLayout_6)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1236, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1434, 24))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
@@ -334,7 +349,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "MCS Manager"))
         self.createServerBtn.setText(_translate("MainWindow", "Create Server"))
         self.buttonAddWhiteList.setText(_translate("MainWindow", "Player"))
         self.label.setText(_translate("MainWindow", "Server PORT:"))
