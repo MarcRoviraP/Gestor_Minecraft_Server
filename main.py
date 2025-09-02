@@ -1,9 +1,11 @@
+import pathlib
 import platform
 import sys
 import os
 import subprocess
 import shutil
 import json
+import zipfile
 import requests
 import uuid
 from PyQt6.QtWidgets import *
@@ -92,6 +94,34 @@ class Window(QMainWindow):
 
         #Crear directorio base si no existe
         self.crearBaseFolders()
+        
+
+    def exportModPack(self, server):
+        rutaServer = os.path.join(server_path, server)
+        rutaMods = os.path.join(rutaServer, "mods")
+    
+        print(f"Exportando modpack para el servidor {server}...")
+    
+        # Todos los .jar dentro de la carpeta mods
+        jars = [os.path.join(rutaMods, f) for f in os.listdir(rutaMods) if f.endswith(".jar")]
+    
+        # Pedir al usuario dónde guardar el zip
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Guardar archivo ZIP",
+            str(pathlib.Path.home() / f"{server}_mods.zip"),
+            "Zip Files (*.zip)"
+        )
+    
+        if filename:
+            with zipfile.ZipFile(filename, "w") as zipf:
+                for jar in jars:
+                    # Solo meter "mods/archivo.jar" en el zip
+                    arcname = os.path.join("mods", os.path.basename(jar))
+                    zipf.write(jar, arcname)
+    
+            print(f"ZIP guardado en: {filename}")
+    
 
     def saveProperties(self):
         ruta = os.path.join(server_path, self.lastServer)
@@ -441,6 +471,7 @@ class Window(QMainWindow):
 
         print("Entrando al contexto de mods...")
         
+        
         # Obtener mods instalados
         self.modsInstalados = os.listdir(os.path.join(server_path, server, "mods")) if os.path.exists(os.path.join(server_path, server, "mods")) else []
         self.modsInstalados = [mod.replace("_", " ").replace(".jar", "") for mod in self.modsInstalados]
@@ -458,6 +489,9 @@ class Window(QMainWindow):
         self.main_window.modsListWidget.verticalScrollBar().valueChanged.connect(
             partial(self.scrollModsList, server=server, tipo=tipo, version=version)
         )
+        
+        #Exportar mods
+        self.main_window.exportModPack.clicked.connect(partial(self.exportModPack, server))
     def scrollModsList(self, value, server, tipo, version):
         maximum = self.main_window.modsListWidget.verticalScrollBar().maximum()
         if maximum == 0:

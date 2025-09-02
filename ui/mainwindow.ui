@@ -496,15 +496,26 @@ QToolTip {
     <widget class="QWidget" name="">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>871</width>
-       <height>571</height>
+       <x>20</x>
+       <y>21</y>
+       <width>811</width>
+       <height>581</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_8">
       <item>
-       <widget class="QListWidget" name="instaledModsList"/>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <item>
+         <widget class="QPushButton" name="exportModPack">
+          <property name="text">
+           <string>Export Mod Pack</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QListWidget" name="instaledModsList"/>
+        </item>
+       </layout>
       </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_6">
