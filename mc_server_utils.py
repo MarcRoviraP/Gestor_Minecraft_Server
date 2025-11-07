@@ -132,6 +132,10 @@ def getAllNeoforgeVersions():
         # Tomar la mayor
         last_versions.append(f"1.{mm} - {subset_sorted[0]}")
     last_versions.pop()
+    last_versions.sort(
+    key=lambda x: tuple(map(int, re.findall(r'\d+', x.split(" - ")[1]))),
+    reverse=True
+)
     return last_versions
 
 def downloadJARNeoforge(version, ruta_destino):

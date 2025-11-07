@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from functools import partial
+from pathlib import Path
 
 from ImgCache import ImageCache
 from fs_utils import mkdir_if_not_exists
@@ -330,7 +331,7 @@ class Window(QMainWindow):
                     self.main_window.whiteList.removeItemWidget(item)
                     self.main_window.whiteList.takeItem(i)
                     break
-        ruta = os.path.join(server_path, "servers", self.lastServer, "whitelist.json")
+        ruta = os.path.join(server_path, self.lastServer, "whitelist.json")
         if not os.path.exists(ruta):
             print(f"El servidor {self.lastServer} no existe.")
             return
@@ -525,12 +526,32 @@ class Window(QMainWindow):
             self.main_window.instaledModsList.addItem(item)
             self.main_window.instaledModsList.setItemWidget(item, widget)
 
-    def uninstall_mod(self, mod, server):
-        print(f"Desinstalando mod: {mod}")
-        os.remove(os.path.join(server_path, server, "mods", mod.replace(" ", "_") + ".jar"))
-        
-        self.modsInstalados.remove(mod)
-        self.showInstalledMods(server)
+    def uninstall_mod(self, mod: str, server: str):
+        try:
+            # Construye la ruta esperada
+            mods_folder = Path(server_path) / server / "mods"
+            safe_name = mod.replace(" ", "_") + ".jar"
+            mod_path = mods_folder / safe_name
+
+            # Resuelve enlaces simbólicos y normaliza
+            mod_path = mod_path.resolve()
+
+            # Verifica que esté dentro de la carpeta mods
+            if not mod_path.is_relative_to(mods_folder.resolve()):
+                raise ValueError("Ruta de mod no válida.")
+
+            if not mod_path.is_file():
+                self.showWarningDialog("El mod no existe.", "Error")
+                return
+
+            mod_path.unlink()
+            self.modsInstalados.remove(mod)
+            self.showInstalledMods(server)
+
+        except ValueError as e:
+            self.showWarningDialog(str(e), "Error de seguridad")
+        except Exception as e:
+            self.showWarningDialog(f"No se pudo desinstalar el mod: {e}", "Error")
         
     def showMods(self, server, tipo, version, append=False):
         print("Mostrando mods...")
@@ -628,7 +649,7 @@ class Window(QMainWindow):
                 widget.setText("❌")
                 print(f"[IconDownloader] Error: No se pudo descargar el icono de {url}")
         except Exception as e:
-            print(f"[IconDownloader] Error: {e}")
+            #print(f"[IconDownloader] Error: {e}")
             pass
         
     def handle_item_click(self, item):
@@ -790,27 +811,42 @@ class Window(QMainWindow):
         dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
         dialog.exec()
 
-    def crearServidor(self, nombre, version, tipo, ram_min, ram_max,seed, hardcore, dialog):
+    # Dentro de tu clase Window
+    def crearServidor(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
         if not nombre.strip():
-            self.showWarningDialog("El nombre del servidor no puede estar vacío.", "Error al crear servidor")
+            self.showWarningDialog("El nombre del servidor no puede estar vacío.", "Error")
             return
-        
-        if os.path.exists(os.path.join(server_path, nombre)):
-            self.showWarningDialog(f"Ya existe un servidor con el nombre '{nombre}'. Por favor, elige otro nombre.", "Error al crear servidor")
+        if (Path(server_path) / nombre).exists():
+            self.showWarningDialog("Ya existe un servidor con ese nombre.", "Error")
             return
-        if tipo == "Vanilla":
-            self.setup_minecraft_server_vanilla(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
-        elif tipo == "Forge":
-            self.setup_minecraft_server_forge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
-            
-        elif tipo == "Fabric":
-            self.setup_minecraft_server_fabric(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
 
+        # Crear barra de progreso
+        self.progress = ProgressDialog(self, "Creando servidor...")
+        self.progress.show()
 
-        elif tipo == "NeoForge":
-            self.setup_minecraft_server_neoforge(nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog)
-            
-        self.reloadServers()
+        # Crear worker y thread
+        self.thread = QThread()
+        self.worker = ServerCreatorWorker(nombre, version, tipo, ram_min, ram_max, seed, hardcore)
+        self.worker.moveToThread(self.thread)
+
+        # Conectar señales
+        self.thread.started.connect(self.worker.run)
+        self.worker.message.connect(self.progress.set_texto)
+        self.worker.progress.connect(self.progress.set_valor)
+        self.worker.finished.connect(self._crearServidor_terminado)
+        self.worker.error.connect(lambda msg: self.showWarningDialog(msg, "Error"))
+        self.progress.cancelled.connect(self.worker.cancelar)
+
+        # Lanzar
+        self.thread.start()
+        dialog.accept()
+
+    def _crearServidor_terminado(self, ok):
+        self.thread.quit()
+        self.thread.wait()
+        self.progress.finalizar()
+        if ok:
+            self.reloadServers()
 
     def setup_minecraft_server_neoforge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
 
@@ -832,7 +868,16 @@ class Window(QMainWindow):
 
         self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
         serverJAR = f"{server_path}/{nombre}/{versionNeoForge}.jar"
-        shutil.copy(os.path.join(server_path, nombre,"libraries","net","neoforged","neoforge", versionNeoForge,f"neoforge-{versionNeoForge}-server.jar"), serverJAR)
+        pathInternalJar = os.path.join(server_path, nombre,"libraries","net","neoforged","neoforge", versionNeoForge,f"neoforge-{versionNeoForge}-server.jar")
+        pathUniversalInternalJar = os.path.join(server_path, nombre,"libraries","net","neoforged","neoforge", versionNeoForge,f"neoforge-{versionNeoForge}-universal.jar")
+        if os.path.exists(pathInternalJar):
+            shutil.copy(pathInternalJar, serverJAR)
+        elif os.path.exists(pathUniversalInternalJar):
+            shutil.copy(pathUniversalInternalJar, serverJAR)
+        else:
+            print("No se encontró el archivo JAR del servidor NeoForge.")
+            self.showWarningDialog("No se encontró el archivo JAR del servidor NeoForge.", "Error al crear servidor")
+            return
         self.startServer(nombre, ram_min, ram_max, serverJAR, tipo,versionNeoForge)
         dialog.accept()
 
@@ -964,13 +1009,184 @@ class Window(QMainWindow):
 
         except Exception as e:
             print("Error al iniciar el servidor:", e)
+class ProgressDialog(QProgressDialog):
+    cancelled = pyqtSignal()
 
+    def __init__(self, parent, titulo="Creando servidor", maximo=0):
+        super().__init__(titulo, "Cancelar", 0, maximo, parent)
+        self.setWindowTitle(titulo)
+        self.setWindowModality(Qt.WindowModality.ApplicationModal)
+        self.setAutoClose(False)
+        self.setAutoReset(False)
+        self.canceled.connect(self.cancelled)
+
+    def set_texto(self, texto):
+        self.setLabelText(texto)
+
+    def set_valor(self, valor):
+        self.setValue(valor)
+
+    def finalizar(self):
+        self.setValue(self.maximum())
+        self.close()
+        
+
+class ServerCreatorWorker(QObject):
+    # Señales
+    progress = pyqtSignal(int)          # 0-100
+    message = pyqtSignal(str)           # texto informativo
+    finished = pyqtSignal(bool)         # True = ok, False = cancelado/error
+    error = pyqtSignal(str)
+
+    def __init__(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore):
+        super().__init__()
+        self.nombre = nombre
+        self.version = version
+        self.tipo = tipo
+        self.ram_min = ram_min
+        self.ram_max = ram_max
+        self.seed = seed
+        self.hardcore = hardcore
+        self._cancelado = False
+
+    def cancelar(self):
+        self._cancelado = True
+
+    def run(self):
+        try:
+            self.message.emit("Descargando archivos...")
+            self.progress.emit(10)
+
+            if self._cancelado:
+                self.finished.emit(False)
+                return
+
+            # --- Lógica por tipo ---
+            if self.tipo == "Vanilla":
+                self._setup_vanilla()
+            elif self.tipo == "Forge":
+                self._setup_forge()
+            elif self.tipo == "Fabric":
+                self._setup_fabric()
+            elif self.tipo == "NeoForge":
+                self._setup_neoforge()
+            else:
+                raise ValueError("Tipo de servidor no soportado")
+
+            if self._cancelado:
+                self.finished.emit(False)
+                return
+
+            self.progress.emit(100)
+            self.message.emit("Servidor creado con éxito")
+            self.finished.emit(True)
+
+        except Exception as e:
+            self.error.emit(str(e))
+            self.finished.emit(False)
+
+    # ---------- SETUPS ----------
+    def _setup_vanilla(self):
+        from main import server_path, jars_path  # importación local para evitar circular
+        jar_name = f"{self.version}_server_vanilla.jar"
+        jar_orig = Path(jars_path) / jar_name
+        if not jar_orig.exists():
+            mc_server_utils.descargar_server_jar(
+                mc_server_utils.obtener_jar_servidor(self.version),
+                jar_orig
+            )
+        self.progress.emit(30)
+
+        server_dir = Path(server_path) / self.nombre
+        server_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(jar_orig, server_dir / "server_vanilla.jar")
+        self._write_before_launch(server_dir)
+
+    def _setup_forge(self):
+        from main import server_path, jars_path
+        forge_version = mc_server_utils.getRecommendedForgeVersion(self.version).split("-")[1]
+        installer_name = f"forge-{self.version}-{forge_version}-installer.jar"
+        installer_path = Path(jars_path) / installer_name
+        if not installer_path.exists():
+            mc_server_utils.downloadJARInstallerForge(self.version, forge_version, installer_path)
+        self.progress.emit(30)
+
+        server_dir = Path(server_path) / self.nombre
+        server_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["java", "-jar", installer_path, "--installServer"], cwd=server_dir, check=True)
+        self.progress.emit(70)
+
+        shim = server_dir / f"forge-{self.version}-{forge_version}-shim.jar"
+        if not shim.exists():
+            raise FileNotFoundError("No se generó el shim de Forge")
+        self._write_before_launch(server_dir)
+
+    def _setup_fabric(self):
+        from main import server_path, jars_path
+        jar_name = f"fabric_{self.version}_server.jar"
+        jar_path = Path(jars_path) / jar_name
+        if not jar_path.exists():
+            mc_server_utils.downloadJARFabric(self.version, jar_path)
+        self.progress.emit(30)
+
+        server_dir = Path(server_path) / self.nombre
+        server_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["java", "-jar", jar_path, "--installServer"], cwd=server_dir, check=True)
+        self.progress.emit(70)
+
+        fabric_jar = server_dir / ".fabric" / "server" / f"{self.version}-server.jar"
+        if not fabric_jar.exists():
+            raise FileNotFoundError("No se generó el JAR de Fabric")
+        self._write_before_launch(server_dir)
+
+    def _setup_neoforge(self):
+        from main import server_path, jars_path
+        version_neo = self.version.split()[2]
+        jar_name = f"neoforge_{version_neo}_server.jar"
+        jar_path = Path(jars_path) / jar_name
+        if not jar_path.exists():
+            mc_server_utils.downloadJARNeoforge(version_neo, jar_path)
+        self.progress.emit(30)
+
+        server_dir = Path(server_path) / self.nombre
+        server_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["java", "-jar", jar_path, "--installServer"], cwd=server_dir, check=True)
+        self.progress.emit(70)
+
+        # Buscar el JAR generado
+        libs = server_dir / "libraries" / "net" / "neoforged" / "neoforge" / version_neo
+        jar_server = next(libs.glob("neoforge-*-server.jar"), None)
+        if not jar_server:
+            jar_server = next(libs.glob("neoforge-*-universal.jar"), None)
+
+            if not jar_server:
+                raise FileNotFoundError("No se generó el JAR del servidor NeoForge")
+        shutil.copy(jar_server, server_dir / f"{version_neo}.jar")
+        self._write_before_launch(server_dir)
+
+    def _write_before_launch(self, server_dir: Path):
+        from main import server_path
+        # Aceptar EULA
+        (server_dir / "eula.txt").write_text("eula=true\n")
+        # versions.txt
+        (server_dir / "versions.txt").write_text(
+            f"{self.version}\n{self.tipo}\n{self.ram_min}\n{self.ram_max}\n"
+        )
+        # server-icon.png
+        icon_src = Path("minecraft/ico/server-icon.png")
+        if icon_src.exists():
+            shutil.copy(icon_src, server_dir / "server-icon.png")
+            
 if __name__ == "__main__":
+    ico_path = Path(__file__).parent / "minecraft" / "ico" / "server_icon.ico"
+    print(f"Icon path: {ico_path.resolve()}")
     # Create the application
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(str(ico_path.resolve())))
     # Create and show the application's main window
     cache = ImageCache()
     win = Window(cache)
+    win.setWindowIcon(QIcon(str(ico_path.resolve())))
     win.show()
     # Run the application's main loop
     sys.exit(app.exec())
