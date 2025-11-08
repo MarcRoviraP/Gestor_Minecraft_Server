@@ -22,7 +22,7 @@ MCSManager es un **ejecutivo portátil** que te permite:
 
 | Sistema | Enlace |
 |---------|--------|
-| Windows | [MCSManager.exe]([https://github.com/TU_USUARIO/MCSManager/releases/latest/download/MCSManager.exe](https://github.com/MarcRoviraP/Gestor_Minecraft_Server/releases/download/v1.0.0/MCSManager.exe)) |
+| Windows | [MCSManager.exe](https://github.com/MarcRoviraP/Gestor_Minecraft_Server/releases/download/v1.0.0/MCSManager.exe) |
 
 Requisitos:
 - **Windows 10/11 x64**
@@ -53,12 +53,6 @@ Requisitos:
 
 ---
 
-## 📸 Capturas
-
-*(Puedes añadir imágenes aquí cuando subas el release)*
-
----
-
 ## 🔐 Licencia
 
 **© 2025 Marc Rovira Perelló – Todos los derechos reservados**  
@@ -80,7 +74,6 @@ Uso **exclusivamente personal**.
 
 ## 📄 Créditos
 
-- **Iconos**: [minecraft-server-icons](https://github.com/...)  
 - **APIs**: Modrinth, Mojang, Stripe  
 - **Tecnología**: PyQt6, Python 3.12, Supabase, Stripe
 
