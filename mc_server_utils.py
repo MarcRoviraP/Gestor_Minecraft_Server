@@ -8,6 +8,7 @@ import asyncio
 import aiohttp
 import xml.etree.ElementTree as ET
 
+
 globalforgeVersions = []
 def obtener_versiones_minecraft():
     #JARs disponibles apartir de la versión 1.2.5
@@ -307,3 +308,56 @@ def stopServer(server):
         except Exception as e:
             print("Error al acceder al proceso:", e)
     return
+
+import subprocess
+import sys
+import os
+from PyQt6.QtWidgets import QMessageBox, QPushButton
+from PyQt6.QtCore import QUrl
+from PyQt6.QtGui import QDesktopServices
+
+JAVA_MIN = 21
+DOWNLOAD_URL = "https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html"
+
+def get_java_version():
+    """
+    Devuelve la versión mayor de Java instalada (ej. 21) o None si no se encuentra.
+    """
+    try:
+        result = subprocess.run(
+    ["java", "-version"],
+    capture_output=True,
+    text=True,
+    check=True
+)
+        result = result.stderr.splitlines()
+        # Ejemplo de línea: openjdk version "21.0.5" 2024-10-15 LTS
+        for line in result:
+            if "version" in line:
+                # Extraemos el número entre comillas
+                part = line.split('"')[1]   # "21.0.5"
+                major = int(part.split('.')[0])
+                return major
+    except Exception as e:
+        print("Error al obtener la versión de Java:", e)
+        return None
+
+def check_java(parent=None):
+    version = get_java_version()
+    if version is None or version < JAVA_MIN:
+        msg = QMessageBox(parent)
+        msg.setIcon(QMessageBox.Icon.Warning)
+        msg.setWindowTitle("Java no encontrado o desactualizado")
+        msg.setText(
+            f"Se requiere Java {JAVA_MIN} o superior para arrancar los servidores.\n"
+            f"Versión detectada: {'Ninguna' if version is None else version}\n\n"
+            "¿Deseas descargar Java 21 ahora?"
+        )
+        btn_download = msg.addButton("Descargar Java 21", QMessageBox.ButtonRole.AcceptRole)
+        btn_cancel = msg.addButton("Cancelar", QMessageBox.ButtonRole.RejectRole)
+        msg.exec()
+
+        if msg.clickedButton() == btn_download:
+            QDesktopServices.openUrl(QUrl(DOWNLOAD_URL))
+        return False
+    return True

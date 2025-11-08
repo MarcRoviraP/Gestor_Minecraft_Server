@@ -1192,6 +1192,8 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(fs_utils.resource_path("minecraft/ico/server_icon.ico")))
     # Create and show the application's main window
+    if not mc_server_utils.check_java():
+        sys.exit(0) 
     cache = ImageCache()
     win = Window(cache)
     win.setWindowIcon(QIcon(fs_utils.resource_path("minecraft/ico/server_icon.ico")))
