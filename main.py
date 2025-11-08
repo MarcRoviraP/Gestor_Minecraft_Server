@@ -19,6 +19,7 @@ from fs_utils import mkdir_if_not_exists
 from iconDownloader import IconDownloader, IconResult
 from mainwindow import Ui_MainWindow
 import mc_server_utils
+import fs_utils
 
 
 base_path = os.path.join(os.path.expanduser("~"), "MinecraftServers")
@@ -293,7 +294,7 @@ class Window(QMainWindow):
             borrarButton = QPushButton("")
             borrarButton.setProperty("btnType", "icon")
             borrarButton.setIconSize(QSize(24, 24))
-            borrarButton.setIcon(QIcon("minecraft/ico/delete.png"))
+            borrarButton.setIcon(QIcon(fs_utils.resource_path("minecraft/ico/delete.png")))
             borrarButton.setToolTip("Borrar de la lista blanca")
             borrarButton.clicked.connect(partial(self.removeUserFromWhiteList, entry))
             
@@ -365,7 +366,7 @@ class Window(QMainWindow):
                 """)
             # Icono servidor
             img = QLabel()
-            icon_path = os.path.join(uri_server, "server-icon.png")
+            icon_path = fs_utils.resource_path(os.path.join(uri_server, "server-icon.png"))
             if os.path.exists(icon_path):
                 ico = QIcon(icon_path)
                 img.setPixmap(ico.pixmap(64, 64))
@@ -424,7 +425,7 @@ class Window(QMainWindow):
                     start_server_button.clicked.connect(partial(self.startServer, server, ram_min, ram_max, ruta_jar, tipo, version_param))
 
             # Botón carpeta
-            folder_button = QPushButton(QIcon("minecraft/ico/folder.png"), "")
+            folder_button = QPushButton(QIcon(fs_utils.resource_path("minecraft/ico/folder.png")), "")
             folder_button.setToolTip("Abrir carpeta del servidor")
             folder_button.setProperty("btnType", "icon")
             folder_button.setFixedSize(32, 32)
@@ -493,6 +494,7 @@ class Window(QMainWindow):
         
         #Exportar mods
         self.main_window.exportModPack.clicked.connect(partial(self.exportModPack, server))
+        self.main_window.exportModPack.setToolTip("Exportar mods instalados en un archivo ZIP")
     def scrollModsList(self, value, server, tipo, version):
         maximum = self.main_window.modsListWidget.verticalScrollBar().maximum()
         if maximum == 0:
@@ -599,6 +601,7 @@ class Window(QMainWindow):
 
             version_label = QLabel(f"Versión: {version}")
             name_label.setStyleSheet("font-weight: bold")
+            name_label.setMaximumWidth(200)
             info_layout = QVBoxLayout()
             info_layout.addWidget(name_label)
             info_layout.addWidget(version_label)
@@ -607,18 +610,22 @@ class Window(QMainWindow):
             download_button = QPushButton()
             if title in self.modsInstalados:
                 download_button.setText("✔ Instalado")
+                download_button.setToolTip("Mod ya instalado")
             else:
                 download_button.setText("⬇ Descargar")
+                download_button.setToolTip("Descargar mod")
                 download_button.clicked.connect(
                     partial(self.descargar_mod, title, mod['latest_version'], server, download_button)
                 )
 
+            
             layout.addWidget(icon_label)
             layout.addLayout(info_layout)
             layout.addStretch()
             layout.addWidget(download_button)
 
             item = QListWidgetItem()
+            item.setToolTip(title + " - " + version)
             item.setSizeHint(widget.sizeHint())
             self.main_window.modsListWidget.addItem(item)
             self.main_window.modsListWidget.setItemWidget(item, widget)
@@ -632,6 +639,7 @@ class Window(QMainWindow):
         destino = os.path.join(server_path, server, "mods")
         mc_server_utils.descargarMod(version, destino, title)
         download_button.setText("✔ Instalado")
+        download_button.setToolTip("Mod ya instalado")
         download_button.clicked.disconnect()
         self.modsInstalados.append(title)
         self.showInstalledMods(server)
@@ -969,7 +977,7 @@ class Window(QMainWindow):
         if seed:
             self.writeProperties(ruta, f"level-seed={seed}\n")
 
-        shutil.copy("minecraft/ico/server-icon.png", f"{server_path}/{nombre}/")
+        shutil.copy(fs_utils.resource_path("minecraft/ico/server-icon.png"), f"{server_path}/{nombre}/")
 
     def startServer(self, nombre, ram_min, ram_max, rutaJar,tipo,version):
         if tipo.lower() != "neoforge":
@@ -1173,20 +1181,20 @@ class ServerCreatorWorker(QObject):
             f"{self.version}\n{self.tipo}\n{self.ram_min}\n{self.ram_max}\n"
         )
         # server-icon.png
-        icon_src = Path("minecraft/ico/server-icon.png")
+        icon_src = Path(fs_utils.resource_path("minecraft/ico/server-icon.png"))
         if icon_src.exists():
             shutil.copy(icon_src, server_dir / "server-icon.png")
-            
+
 if __name__ == "__main__":
     ico_path = Path(__file__).parent / "minecraft" / "ico" / "server_icon.ico"
     print(f"Icon path: {ico_path.resolve()}")
     # Create the application
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(str(ico_path.resolve())))
+    app.setWindowIcon(QIcon(fs_utils.resource_path("minecraft/ico/server_icon.ico")))
     # Create and show the application's main window
     cache = ImageCache()
     win = Window(cache)
-    win.setWindowIcon(QIcon(str(ico_path.resolve())))
+    win.setWindowIcon(QIcon(fs_utils.resource_path("minecraft/ico/server_icon.ico")))
     win.show()
     # Run the application's main loop
     sys.exit(app.exec())
