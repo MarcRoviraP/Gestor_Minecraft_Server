@@ -866,110 +866,6 @@ class Window(QMainWindow):
         if ok:
             self.reloadServers()
 
-    def setup_minecraft_server_neoforge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
-
-        versionNeoForge = version.split()[2]
-        jarName = f"{jars_path}/neoforge_{versionNeoForge}_server.jar"
-        if not os.path.exists(jarName):
-            mc_server_utils.downloadJARNeoforge(versionNeoForge, jarName)
-            
-        os.makedirs(os.path.join(server_path, nombre), exist_ok=True)
-        
-        command = [
-            "java",
-            "-jar",
-            jarName,
-            "--installServer"
-            ]
-
-        subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
-
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
-        serverJAR = f"{server_path}/{nombre}/{versionNeoForge}.jar"
-        pathInternalJar = os.path.join(server_path, nombre,"libraries","net","neoforged","neoforge", versionNeoForge,f"neoforge-{versionNeoForge}-server.jar")
-        pathUniversalInternalJar = os.path.join(server_path, nombre,"libraries","net","neoforged","neoforge", versionNeoForge,f"neoforge-{versionNeoForge}-universal.jar")
-        if os.path.exists(pathInternalJar):
-            shutil.copy(pathInternalJar, serverJAR)
-        elif os.path.exists(pathUniversalInternalJar):
-            shutil.copy(pathUniversalInternalJar, serverJAR)
-        else:
-            print("No se encontró el archivo JAR del servidor NeoForge.")
-            self.showWarningDialog("No se encontró el archivo JAR del servidor NeoForge.", "Error al crear servidor")
-            return
-        self.startServer(nombre, ram_min, ram_max, serverJAR, tipo,versionNeoForge)
-        dialog.accept()
-
-    def setup_minecraft_server_fabric(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
-
-        jarName = f"{jars_path}/fabric_{version}_server.jar"
-        if not os.path.exists(jarName):
-            mc_server_utils.downloadJARFabric(version, jarName)
-            print(jarName + " Descargado")
-            
-        os.makedirs(os.path.join(server_path, nombre), exist_ok=True)
-        
-        command = [
-            "java",
-            "-jar",
-            jarName,
-            "--installServer"
-            ]
-
-        subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
-        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/.fabric/server/{version}-server.jar", tipo,version)
-
-        dialog.accept()
-
-
-    def setup_minecraft_server_forge(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
-
-        forgeVersion = mc_server_utils.getRecommendedForgeVersion(version).split("-")[1]
-        mcVersion = version
-        
-        installerName = (f"forge-{mcVersion}-{forgeVersion}-installer.jar")
-        # Comprobar si el instalador ya existe
-        if not os.path.exists(f"{jars_path}/{installerName}"):
-            mc_server_utils.downloadJARInstallerForge(mcVersion, forgeVersion, f"{jars_path}/{installerName}")
-        
-        os.makedirs(os.path.join(server_path, nombre), exist_ok=True)
-        
-        command = [
-            "java",
-            "-jar",
-            os.path.join(jars_path, installerName),
-            "--installServer"
-            ]
-
-        subprocess.run(command, cwd=f"{server_path}/{nombre}", check=True)
-
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version, tipo, ram_min, ram_max)
-
-        self.startServer(nombre, ram_min, ram_max, f"{server_path}/{nombre}/forge-{mcVersion}-{forgeVersion}-shim.jar", tipo,version)
-        dialog.accept()
-
-         
-    def setup_minecraft_server_vanilla(self, nombre, version, tipo, ram_min, ram_max, seed, hardcore, dialog):
-        nombreJar = f"{version}_server_vanilla.jar"
-
-        if not os.path.exists(f"{jars_path}/{nombreJar}"):
-            mc_server_utils.descargar_server_jar(
-                mc_server_utils.obtener_jar_servidor(version),
-                f"{jars_path}/{nombreJar}"
-            )
-
-        self.writeBeforeLaunchSettings(nombre, seed, hardcore, version,tipo,ram_min, ram_max)
-
-        rutaJarInicial = os.path.join(jars_path, nombreJar)
-        rutaJarFinal = os.path.join(server_path, nombre, "server_vanilla.jar")
-        shutil.copy(rutaJarInicial, rutaJarFinal)
-        # Lanzamos el servidor
-        self.startServer(nombre, ram_min, ram_max, rutaJarFinal, tipo, version)
-
-        print(f"Creando servidor '{nombre}' con versión {version}, tipo {tipo}, RAM {ram_min}-{ram_max}MB.")
-        # Recargar la lista de servidores
-        self.main_window.listServers.clear()
-        dialog.accept()
 
     def writeBeforeLaunchSettings(self, nombre, seed, hardcore, version,tipo,ram_min=1024, ram_max=2048):
         ruta = os.path.join(server_path, nombre)
@@ -1096,7 +992,7 @@ class ServerCreatorWorker(QObject):
                 return
 
             self.progress.emit(100)
-            self.message.emit("Servidor creado con éxito")
+            self.message.emit("Servidor descargado con éxito")
             self.finished.emit(True)
 
         except Exception as e:
@@ -1152,11 +1048,18 @@ class ServerCreatorWorker(QObject):
         subprocess.run(["java", "-jar", jar_path, "--installServer"], cwd=server_dir, check=True)
         self.progress.emit(70)
 
-        fabric_jar = server_dir / ".fabric" / "server" / f"{self.version}-server.jar"
-        if not fabric_jar.exists():
-            raise FileNotFoundError("No se generó el JAR de Fabric")
-        self._write_before_launch(server_dir)
+        # LOCALIZAR y COPIAR el JAR (como en tu función original)
+        fabric_server_dir = server_dir / ".fabric" / "server"
+        jars = list(fabric_server_dir.glob("*.jar"))
+        if not jars:
+            raise FileNotFoundError("No se encontró ningún .jar generado por Fabric")
 
+        # COPIAR al directorio raíz
+        jar_destino = server_dir / "server_fabric.jar"
+        shutil.copy(jars[0], jar_destino)
+
+        self._write_before_launch(server_dir)
+        
     def _setup_neoforge(self):
         from main import server_path, jars_path
         version_neo = self.version.split()[2]
