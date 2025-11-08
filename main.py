@@ -63,6 +63,9 @@ class Window(QMainWindow):
         self.main_window.configurePropertiesWidget.setVisible(False)
         self.main_window.widgetWhiteList.setVisible(self.main_window.Whitelist.isChecked())
 
+        # About me dialog
+        self.create_menu()
+                
         def comprobarServidoresOnline():
             listaAux = mc_server_utils.getOnlineServers()
 
@@ -97,7 +100,14 @@ class Window(QMainWindow):
         #Crear directorio base si no existe
         self.crearBaseFolders()
         
+    def create_menu(self):
+        menubar = self.menuBar()
+        about_action = QAction("Acerca de", self)
+        about_action.triggered.connect(self.show_about)
+        menubar.addAction(about_action)   # <- directo, sin desplegable
 
+    def show_about(self):
+        AboutDialog(self).exec()
     def exportModPack(self, server):
         rutaServer = os.path.join(server_path, server)
         rutaMods = os.path.join(rutaServer, "mods")
@@ -1184,6 +1194,71 @@ class ServerCreatorWorker(QObject):
         icon_src = Path(fs_utils.resource_path("minecraft/ico/server-icon.png"))
         if icon_src.exists():
             shutil.copy(icon_src, server_dir / "server-icon.png")
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLabel, QPushButton,
+                             QHBoxLayout, QFrame)
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices, QFont
+
+
+from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QLabel, QPushButton,
+                             QFrame, QHBoxLayout)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QDesktopServices
+from PyQt6.QtCore import QUrl
+
+
+class AboutDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Acerca de")
+        self.setFixedSize(400, 300)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+
+        # ------ Widgets ------
+        title = QLabel("MCSManager")
+        title_font = QFont()
+        title_font.setBold(True)
+        title_font.setPointSize(16)
+        title.setFont(title_font)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        desc = QLabel("Gestor ligero y moderno para servidores Minecraft Java.\n"
+                      "Crea, configura y administra tus mundos en un clic.")
+        desc.setWordWrap(True)
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        author = QLabel("© 2025 Marc Rovira Perelló")
+        author.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        link = QLabel('<a href="https://github.com/MarcRoviraP/Gestor_Minecraft_Server">'
+                      'https://github.com/MarcRoviraP/Gestor_Minecraft_Server</a>')
+        link.setOpenExternalLinks(True)
+        link.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        license_lbl = QLabel("Todos los derechos reservados – Uso exclusivo")
+        license_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        extra = QLabel("Prohibida su redistribución, modificación o uso comercial sin autorización.")
+        extra.setWordWrap(True)
+        extra.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        close_btn = QPushButton("Cerrar")
+        close_btn.clicked.connect(self.accept)
+
+        # ------ Layout ------
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+
+        v = QVBoxLayout(self)
+        v.addWidget(title)
+        v.addWidget(desc)
+        v.addWidget(author)
+        v.addWidget(link)
+        v.addWidget(license_lbl)
+        v.addWidget(extra)
+        v.addWidget(line)
+        v.addWidget(close_btn, alignment=Qt.AlignmentFlag.AlignRight)
 
 if __name__ == "__main__":
     ico_path = Path(__file__).parent / "minecraft" / "ico" / "server_icon.ico"

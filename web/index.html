@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MCSManager – Gestor de Servidores Minecraft</title>
+  <style>
+    :root {
+      --bg: #1e1e1e;
+      --card: #2c2c2c;
+      --accent: #00bcd4;
+      --text: #ffffff;
+      --sub: #aaaaaa;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      color: var(--sub);
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+    .btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background: #00e5ff;
+    }
+    section {
+      padding: 3rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+    .feature {
+      background: var(--card);
+      padding: 1.5rem;
+      border-radius: 8px;
+      max-width: 700px;
+      width: 100%;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.9rem;
+      color: var(--sub);
+    }
+    @media (min-width: 700px) {
+      h1 {
+        font-size: 3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MCSManager</h1>
+    <p>Gestor ligero y moderno para servidores Minecraft Java. Crea, configura y administra tus mundos en un clic.</p>
+    <a class="btn" href="https://github.com/TU_USUARIO/TU_REPO/releases/latest/download/MCSManager.exe" download>
+      Descargar para Windows
+    </a>
+  </header>
+
+  <section>
+    <div class="feature">
+      <h2>Instalación en segundos</h2>
+      <p>Descarga el .exe, ejecuta y olvídate de consolas. El gestor detecta tu Java y configura todo automáticamente.</p>
+    </div>
+    <div class="feature">
+      <h2>Soporte Vanilla, Forge, Fabric y NeoForge</h2>
+      <p>Desde la clásica Vanilla hasta los últimos snapshots y mod-loaders. Descarga mods sin salir de la app.</p>
+    </div>
+    <div class="feature">
+      <h2>Control total</h2>
+      <p>Edita propiedades, whitelist, dificultad, puertos y más con una interfaz clara y oscera. Inicia y para servidores en un clic.</p>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 MCSManager – Hecho con ❤️ y PyQt6
+  </footer>
+</body>
+</html>
