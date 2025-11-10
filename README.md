@@ -23,16 +23,17 @@ MCSManager es un **ejecutivo portátil** que te permite:
 | Sistema | Enlace |
 |---------|--------|
 | Windows | [MCSManager.exe](https://github.com/MarcRoviraP/Gestor_Minecraft_Server/releases/download/v1.0.0/MCSManager.exe) |
+|  Linux  | [MCSManager](https://github.com/MarcRoviraP/Gestor_Minecraft_Server/releases/download/v1.0.0/MCSManager) |
 
 Requisitos:
-- **Windows 10/11 x64**
+- **Windows 10/11 x64 o Linux**
 - **Java 21** (el propio gestor te avisa y da enlace si falta)
 
 ---
 
 ## 🎮 Uso rápido
 
-1. Ejecuta `MCSManager.exe`.  
+1. Ejecuta `MCSManager`.  
 2. **Crea servidor** → elige versión, tipo y RAM → **Crear**.  
 3. **Arranca** con el botón **START**.  
 4. **Invita amigos**: comparte tu IP y puerto (por defecto `25565`).
