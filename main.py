@@ -894,7 +894,8 @@ class Window(QMainWindow):
             with open(jvm_args_file, "w", encoding="utf-8") as f:
                 f.write(f"-Xms{ram_min}M\n")
                 f.write(f"-Xmx{ram_max}M\n")
-            jar_command = ["java", "@user_jvm_args.txt", f"@{os.path.join(server_path, nombre, "libraries/net/neoforged/neoforge", version, "win_args.txt")}", "nogui"]
+            args = 'win_args.txt' if platform.system().lower() == 'windows' else 'unix_args.txt'
+            jar_command = ["java", "@user_jvm_args.txt", f"@{os.path.join(server_path, nombre, 'libraries/net/neoforged/neoforge', version, args)}", "nogui"]
 
         jar_command_str = " ".join(jar_command)
         cwd = os.path.join(server_path, nombre)
