@@ -75,8 +75,8 @@ Uso **exclusivamente personal**.
 
 ## 📄 Créditos
 
-- **APIs**: Modrinth, Mojang, Stripe  
-- **Tecnología**: PyQt6, Python 3.12, Supabase, Stripe
+- **APIs**: Modrinth, Mojang  
+- **Tecnología**: PyQt6, Python 3.12
 
 ---
 
